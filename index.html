@@ -128,12 +128,13 @@ footer{background:var(--deep);color:rgba(255,255,255,.78);border:0;padding:22px 
 .sg-end{text-align:center;padding:24px 10px}.sg-end h3{font-size:1.5rem;margin:0 0 6px}
 @media (max-width:600px){.sg-st{grid-template-columns:1fr 1fr}.sg-st>div:first-child{grid-column:1/-1}}
 @media (prefers-reduced-motion:reduce){.sg-hp i,.sg-b i,.sg-s{transition:none}.sg.run .sg-b .a{animation:none}}
+.cta{display:inline-block;margin-top:6px;padding:13px 26px;border-radius:12px;background:var(--accent);color:#fff;font-weight:700;text-decoration:none;transition:transform .15s,background .15s}.cta:hover{background:#0a5c56;transform:translateY(-2px)}
 </style>
 </head>
 <body>
 <div class="band"><div class="wrap">
 <header><div class="logo">Aegis</div>
-<nav><a href="#relevance">Актуальность</a><a href="#aims">Задачи</a><a href="#s1">Атаки</a><a href="#s2">Прототип</a><a href="#s3">Рекомендации</a><a href="#game">Игра</a><a href="#strategy">Стратегия</a><a href="#team">Команда</a></nav></header>
+<nav><a href="#relevance">Актуальность</a><a href="#aims">Задачи</a><a href="#s1">Атаки</a><a href="#s2">Прототип</a><a href="#s3">Рекомендации</a><a href="#game">Игра</a><a href="#strategy">Стратегия</a><a href="#survey">Опрос</a><a href="#team">Команда</a></nav></header>
 <div class="hero">
 <p class="tag">Метод защиты Blackhole · IT 19-26 Corporation</p>
 <h1>Обнаружение и фильтрация DDoS-трафика</h1>
@@ -245,6 +246,11 @@ footer{background:var(--deep);color:rgba(255,255,255,.78);border:0;padding:22px 
 <p class="lead" style="margin-top:0">Перед каждой волной вы видите, какие атаки идут. Покупайте защиту за кредиты так, чтобы закрыть все три направления, и продержитесь 8 волн. Одно решение на все случаи не работает: нужна многоуровневая защита.</p>
 <div class="sg" id="sg"></div>
 </section>
+<section id="survey">
+<h2>Опрос для первокурсников</h2>
+<p class="lead" style="margin-top:0">Проверьте, что вы знаете о DDoS-атаках и цифровой безопасности. 11 вопросов, около 3 минут, анонимно. В конце вы увидите свой результат и разбор ответов.</p>
+<a class="cta" href="aegis-survey.html">Пройти опрос</a>
+</section>
 <section id="team">
 <h2>Разработчики</h2>
 <p class="lead" style="margin-top:0">Проект Aegis и метод Blackhole создала команда IT 19-26 Corporation.</p>
@@ -256,7 +262,7 @@ footer{background:var(--deep);color:rgba(255,255,255,.78);border:0;padding:22px 
 </div>
 </section>
 </main>
-<footer>Проект Aegis. Создатели: IT 19-26 Corporation. Учебный проект по кибербезопасности. Данные по атакам: Cloudflare DDoS Threat Report H1 2026.</footer>
+<footer>Проект Aegis. Создатели: IT 19-26 Corporation. Учебный проект по кибербезопасности. <a href="aegis-survey.html" style="color:#7ff0d0">Пройти опрос</a>. Данные по атакам: Cloudflare DDoS Threat Report H1 2026.</footer>
 </div>
 <script>
 var $=function(i){return document.getElementById(i)};

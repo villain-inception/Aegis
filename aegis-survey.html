@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Опрос первокурсников: цифровая безопасность</title>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f6f5;--card:#fff;--ink:#14201d;--mute:#4f5e59;--line:#d3dcd8;--accent:#0f766e;--ok:#2f8f46;--bad:#c93a26;--warn:#b8740a;--deep:#0a3532;--mint:#7ff0d0;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Onest,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55}
+.band{background:linear-gradient(135deg,var(--deep),#0f766e);color:#fff;padding:20px 20px 22px}
+.band div{max-width:620px;margin:0 auto}
+.band b{font-size:1.1rem}.band span{color:var(--mint);font-weight:700;font-size:.9rem;display:block}
+main{max-width:620px;margin:0 auto;padding:18px 20px 40px}
+.prog{height:8px;background:var(--line);border-radius:5px;overflow:hidden;margin-bottom:6px}
+.prog i{display:block;height:100%;width:0;background:var(--accent);border-radius:5px;transition:width .4s}
+.cnt{font-size:.85rem;color:var(--mute);margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;animation:in .3s both}
+@keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+h1{font-size:1.5rem;margin:0 0 8px;line-height:1.2}
+h2{font-size:1.25rem;margin:0 0 14px;line-height:1.3}
+p{margin:0 0 12px}.mute{color:var(--mute)}
+.opt{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;font:inherit;padding:12px 14px;margin-bottom:8px;border:2px solid var(--line);border-radius:12px;background:transparent;color:var(--ink);cursor:pointer;transition:border-color .15s,background .15s}
+.opt:hover{border-color:var(--accent)}
+.opt.sel{border-color:var(--accent);background:rgba(15,118,110,.09)}
+.opt .m{flex:none;width:20px;height:20px;border:2px solid var(--line);border-radius:50%;margin-top:2px}
+.opt.multi .m{border-radius:5px}
+.opt.sel .m{background:var(--accent);border-color:var(--accent)}
+button.btn{font:inherit;font-weight:700;padding:12px 22px;border:0;border-radius:12px;background:var(--accent);color:#fff;cursor:pointer}
+button.btn:disabled{opacity:.45;cursor:not-allowed}
+button.alt{background:transparent;color:var(--ink);border:2px solid var(--line)}
+.nav{display:flex;gap:10px;justify-content:space-between;margin-top:14px}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.score{font-size:3rem;font-weight:800;line-height:1;color:var(--accent)}
+.lvl{display:inline-block;padding:3px 12px;border-radius:999px;color:#fff;font-weight:700;font-size:.85rem;margin-left:8px;vertical-align:middle}
+.rv{padding:12px 0;border-top:1px solid var(--line);font-size:.95rem}
+.rv b.ok{color:var(--ok)}.rv b.bad{color:var(--bad)}
+.rv small{display:block;color:var(--mute);margin-top:3px}
+.tip{background:var(--bg);border-left:4px solid var(--warn);border-radius:0 10px 10px 0;padding:10px 14px;margin:8px 0;font-size:.95rem}
+a{color:var(--accent)}
+@media (prefers-reduced-motion:reduce){.card{animation:none}.prog i{transition:none}}
+</style>
+</head>
+<body>
+<div class="band"><div><b>Aegis: Blackhole</b><span>IT 19-26 Corporation</span></div></div>
+<main id="app"></main>
+<script>
+// Куда отправлять ответы (Google Apps Script, Formspree и т.п.). Пока пусто, ответы никуда не уходят.
+var ENDPOINT='https://script.google.com/macros/s/AKfycbwUI9f695xX7maUbEpA9w0al9KGjQXFH2sOURMY-DFGI-nWgBPp9LmI7pShwGy7vvhB/exec';
+var SITE='https://villain-inception.github.io/Aegis/';
+
+var Q=[
+{id:'dir',t:'Какое направление вы изучаете?',o:['IT и программирование','Другое техническое','Экономика, право, гуманитарное','Другое']},
+{id:'dev',t:'Сколько устройств у вас дома подключено к интернету (телефоны, ноутбуки, роутер, камеры, ТВ)?',o:['1–3','4–7','8 и больше','Не знаю']},
+{id:'know',t:'Слышали ли вы о DDoS-атаках?',o:['Нет','Слышал(а) название','Примерно понимаю суть','Могу объяснить другому']},
+{id:'q4',t:'Что такое DDoS-атака?',o:['Взлом пароля подбором','Перегрузка сервиса запросами сразу с множества устройств','Вирус, шифрующий файлы','Массовая рассылка спама'],c:1,e:'DDoS (распределённый отказ в обслуживании): множество устройств одновременно перегружают сервис, и обычные пользователи не могут им пользоваться.'},
+{id:'q5',t:'Что такое ботнет?',o:['Вид антивируса','Социальная сеть для ботов','Сеть заражённых устройств под управлением злоумышленника','Облачный сервис для тестов'],c:2,e:'Ботнет состоит из заражённых компьютеров, роутеров и камер. Владельцы часто не знают, что их устройство участвует в атаке.'},
+{id:'q6',t:'Что поможет защитить сайт от DDoS?',o:['Фильтрация трафика и ограничение числа запросов','Отключение брандмауэра','Более длинные пароли у посетителей','Очистка кэша в браузере'],c:0,e:'Работают фильтрация трафика, ограничение частоты запросов, CDN и запас мощности.'},
+{id:'q7',t:'Можно ли запустить DDoS на сайт знакомых «просто в шутку»?',o:['Можно, если сайт маленький','Можно, если остановить через минуту','Не знаю','Нет: без разрешения владельца это незаконно'],c:3,e:'Атака на чужую систему без разрешения незаконна, даже если это шутка. Защиту проверяют только на своём или учебном стенде.'},
+{id:'q8',t:'Меняли ли вы пароль по умолчанию на домашнем роутере?',o:['Да, поменял(а)','Нет, оставил(а) как есть','Не знаю, как это сделать','Не знаю, что это такое'],c:[0],tip:'Смените пароль по умолчанию на роутере и камерах: так их сложнее включить в ботнет.'},
+{id:'q9',t:'Как часто вы обновляете телефон и компьютер?',o:['Сразу, как приходит обновление','Раз в несколько месяцев','Редко','Никогда или не знаю'],c:[0,1],tip:'Включите автообновления: большинство заражений используют давно закрытые уязвимости.'},
+{id:'imp',t:'Насколько важна для вас тема кибербезопасности?',o:['1. Совсем не важна','2','3','4','5. Очень важна']},
+{id:'int',t:'Что вам было бы интересно узнать подробнее? Можно выбрать несколько.',multi:1,o:['Как устроены атаки','Как защитить свои устройства','Как работать в кибербезопасности','Законы и ответственность','Ничего из этого']}
+];
+var A={},i=-1,app=document.getElementById('app');
+function ok(q,v){return q.c!==undefined&&(Array.isArray(q.c)?q.c.indexOf(v)>-1:q.c===v)}
+function lab(q){var v=A[q.id];return q.multi?(v||[]).map(function(k){return q.o[k]}).join('; '):v===undefined?'':q.o[v]}
+function prog(){return '<div class="prog"><i style="width:'+Math.max(0,i)/Q.length*100+'%"></i></div><div class="cnt">Вопрос '+(i+1)+' из '+Q.length+'</div>'}
+function intro(){
+ app.innerHTML='<div class="card"><h1>Цифровая безопасность первокурсника</h1><p>Короткий опрос по проекту Aegis об атаках на сайты и защите устройств. Он анонимный, занимает около 3 минут, а в конце вы увидите свой результат и разбор ответов.</p><button class="btn" id="st">Начать</button></div>';
+ document.getElementById('st').onclick=function(){i=0;show()}}
+function show(){
+ var q=Q[i],h=prog()+'<div class="card"><h2>'+q.t+'</h2>';
+ q.o.forEach(function(t,k){var s=q.multi?(A[q.id]||[]).indexOf(k)>-1:A[q.id]===k;
+  h+='<button class="opt'+(q.multi?' multi':'')+(s?' sel':'')+'" data-k="'+k+'"><span class="m"></span><span>'+t+'</span></button>'});
+ h+='<div class="nav"><button class="btn alt" id="bk"'+(i===0?' disabled':'')+'>Назад</button><button class="btn" id="nx"'+(A[q.id]===undefined||(q.multi&&!A[q.id].length)?' disabled':'')+'>'+(i===Q.length-1?'Завершить':'Далее')+'</button></div></div>';
+ app.innerHTML=h;
+ app.querySelectorAll('.opt').forEach(function(b){b.onclick=function(){var k=+b.getAttribute('data-k');
+  if(q.multi){var a=A[q.id]||[],p=a.indexOf(k);p>-1?a.splice(p,1):a.push(k);A[q.id]=a;show()}
+  else{A[q.id]=k;if(i<Q.length-1)setTimeout(function(){i++;show()},220);else show()}}});
+ document.getElementById('bk').onclick=function(){i--;show()};
+ document.getElementById('nx').onclick=function(){if(i===Q.length-1)finish();else{i++;show()}}}
+function finish(){
+ var sc=0,max=0,rv='',tips='';
+ Q.forEach(function(q){if(q.c===undefined)return;max++;var g=ok(q,A[q.id]);if(g)sc++;
+  if(q.e)rv+='<div class="rv"><b class="'+(g?'ok':'bad')+'">'+(g?'Верно':'Неверно')+'</b> — '+q.t+'<small>'+q.e+'</small></div>';
+  else if(!g)tips+='<div class="tip">'+q.tip+'</div>'});
+ var lv=sc>=5?['Высокий','var(--ok)']:sc>=3?['Средний','var(--warn)']:['Начальный','var(--bad)'];
+ send(sc);
+ app.innerHTML='<div class="card"><p class="mute">Ваш результат</p><div><span class="score">'+sc+' из '+max+'</span><span class="lvl" style="background:'+lv[1]+'">'+lv[0]+'</span></div>'+
+  '<p style="margin-top:12px">Спасибо за участие! Ваши ответы помогут сделать проект полезнее.</p>'+tips+'<h2 style="margin-top:18px">Разбор вопросов</h2>'+rv+
+  '<p style="margin-top:16px">Подробнее про атаки и защиту, симулятор и игры: <a href="'+SITE+'" target="_blank" rel="noopener">сайт проекта</a>.</p>'+
+  '<div class="nav"><button class="btn alt" id="cp">Скопировать мои ответы</button><button class="btn" id="rs">Пройти заново</button></div><p class="mute" id="ms" style="margin-top:8px;font-size:.9rem"></p></div>';
+ document.getElementById('rs').onclick=function(){A={};i=-1;intro()};
+ document.getElementById('cp').onclick=function(){var t=payload(sc),m=document.getElementById('ms');
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){m.textContent='Ответы скопированы.'},function(){m.textContent='Не удалось скопировать.'});
+  else m.textContent='Копирование недоступно в этом браузере.'}}
+function payload(sc){var o={time:new Date().toISOString(),score:sc};Q.forEach(function(q){o[q.id]=lab(q)});return JSON.stringify(o)}
+function send(sc){if(!ENDPOINT)return;try{fetch(ENDPOINT,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:payload(sc)})}catch(e){}}
+intro();
+</script>
+</body>
+</html>

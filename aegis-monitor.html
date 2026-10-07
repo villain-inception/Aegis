@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aegis Monitor: панель мониторинга Blackhole</title>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f6f5;--card:#fff;--ink:#14201d;--mute:#4f5e59;--line:#d3dcd8;--accent:#0f766e;--ok:#2f8f46;--warn:#b8740a;--bad:#c93a26;--sky:#2b6cb0;--deep:#0a3532;--mint:#7ff0d0;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Onest,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55}
+.wrap{max-width:960px;margin:0 auto;padding:0 20px}
+.band{background:linear-gradient(135deg,var(--deep),#0f766e);color:#fff}
+.band .wrap{padding-top:22px;padding-bottom:26px}
+.logo{font-weight:800;font-size:1.2rem}
+h1{margin:12px 0 6px;font-size:clamp(1.7rem,5vw,2.5rem);line-height:1.15;animation:up .7s both}
+.band p{margin:0;color:rgba(255,255,255,.85);max-width:60ch}
+.band .tag{color:var(--mint);font-weight:700;margin-bottom:4px}
+@keyframes up{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+button,.btn{font:inherit;font-weight:700;padding:10px 18px;border:0;border-radius:10px;background:var(--accent);color:#fff;cursor:pointer}
+a.alt{font:inherit;font-weight:700;padding:10px 18px;border-radius:10px;border:2px solid var(--line);color:var(--ink);text-decoration:none;display:inline-block;transition:border-color .15s}a.alt:hover{border-color:var(--accent)}
+button.alt{background:transparent;color:var(--ink);border:2px solid var(--line)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin-top:18px}
+h2{font-size:1.2rem;margin:0 0 10px}
+.ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.hint{color:var(--mute);font-size:.9rem;margin:10px 0 0}
+code{background:var(--bg);padding:1px 6px;border-radius:6px;font-size:.88em}
+.err{color:var(--bad);font-weight:500;margin-top:8px}
+#res{display:none}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:18px}
+.kpi div{background:var(--card);border:1px solid var(--line);border-top:4px solid var(--c);border-radius:12px;padding:12px}
+.kpi span{display:block;font-size:.8rem;color:var(--mute)}.kpi b{font-size:1.5rem;font-variant-numeric:tabular-nums}
+.sum{margin-top:18px;background:var(--card);border-left:4px solid var(--accent);border-radius:0 12px 12px 0;padding:12px 16px;font-weight:500}
+.cw{position:relative}
+canvas{width:100%;height:240px;display:block;background:var(--bg);border-radius:12px}
+.tip{position:absolute;top:8px;left:10px;font-size:.85rem;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:2px 8px;pointer-events:none}
+.leg{display:flex;gap:16px;flex-wrap:wrap;font-size:.85rem;color:var(--mute);margin-top:8px}
+.leg i{display:inline-block;width:14px;height:3px;margin-right:6px;vertical-align:middle}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th,td{text-align:left;padding:9px 10px;border-top:1px solid var(--line);white-space:nowrap}
+th{color:var(--mute);font-weight:500;border-top:0}
+tr:hover td{background:rgba(15,118,110,.07)}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:.82rem;font-weight:700;color:#fff}
+.p-bad{background:var(--bad)}.p-warn{background:var(--warn)}.p-ok{background:var(--ok)}
+textarea{width:100%;height:110px;font:inherit;font-size:.9rem;padding:10px;border:2px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);resize:vertical}
+footer{margin:26px 0 40px;color:var(--mute);font-size:.9rem}
+@media (prefers-reduced-motion:reduce){h1{animation:none}}
+</style>
+</head>
+<body>
+<div class="band"><div class="wrap">
+<div class="logo">Aegis Monitor</div>
+<p style="margin:0 0 6px"><a href="index.html" style="color:#7ff0d0;font-weight:700;font-size:.9rem">← На сайт проекта</a></p>
+<h1>Панель мониторинга Blackhole</h1>
+<p class="tag">IT 19-26 Corporation</p>
+<p>Загрузите журнал запросов, и метод Blackhole найдёт атаки, определит их тип и предложит, кого блокировать.</p>
+</div></div>
+
+<div class="wrap">
+<div class="card">
+<h2>Данные</h2>
+<div class="ctl">
+<button id="up">Загрузить CSV</button>
+<button class="alt" id="demo">Демо-данные</button>
+<a class="alt" href="aegis-sample-log.csv" download>Скачать пример CSV</a>
+<a class="alt" href="blackhole.py" download>Код метода (Python)</a>
+<input type="file" id="file" accept=".csv,.txt,.log" hidden>
+</div>
+<p class="hint">Формат: строка на запрос, в столбцах время и IP-адрес, например <code>time,ip</code> и далее <code>1780000000,198.51.100.7</code>. Время может быть в секундах, миллисекундах или в формате ISO. Файл обрабатывается только в вашем браузере.</p>
+<div class="err" id="err" role="alert"></div>
+</div>
+
+<div id="res">
+<div class="sum" id="sum" aria-live="polite"></div>
+<div class="kpi" id="kpi"></div>
+
+<div class="card">
+<h2>Трафик и пороги</h2>
+<div class="cw"><canvas id="cv" aria-label="График запросов в секунду"></canvas><div class="tip" id="tip" hidden></div></div>
+<div class="leg"><span><i style="background:var(--accent)"></i>Запросы в секунду</span><span><i style="background:var(--warn)"></i>Порог тревоги</span><span><i style="background:var(--bad);height:9px"></i>Атака</span></div>
+</div>
+
+<div class="card"><h2>Срабатывания Blackhole</h2><div class="tw"><table id="inc"></table></div></div>
+<div class="card"><h2>Подозрительные источники</h2><div class="tw"><table id="ips"></table></div>
+<p class="hint">«Блокировать»: адрес сам шлёт слишком много запросов. «Проверять»: адрес новый для сервиса и появился во время атаки, ему нужна проверка (challenge), а не блокировка.</p></div>
+<div class="card"><h2>Список для блокировки</h2>
+<textarea id="bl" readonly aria-label="Список адресов для блокировки"></textarea>
+<div class="ctl" style="margin-top:10px"><button id="cp">Копировать список</button><span class="hint" id="cps" style="margin:0"></span></div></div>
+</div>
+<footer>Aegis Monitor. Учебный прототип метода Blackhole. Создатели: IT 19-26 Corporation.</footer>
+</div>
+
+<script>
+var $=function(i){return document.getElementById(i)};
+var RM=matchMedia('(prefers-reduced-motion:reduce)').matches;
+var R=null,hover=-1;
+
+function toTime(v){v=String(v).trim().replace(/^"|"$/g,'');
+  if(/^\d+(\.\d+)?$/.test(v)){var n=+v;return n>1e11?n/1000:n}
+  return Date.parse(v)/1000}
+
+function parseCsv(text){
+  var lines=text.split(/\r?\n/).filter(function(l){return l.trim()});
+  if(lines.length<20)throw new Error('В файле слишком мало строк для анализа (нужно хотя бы 20).');
+  var d=(lines[0].indexOf(';')>-1&&lines[0].indexOf(',')<0)?';':lines[0].indexOf('\t')>-1?'\t':',';
+  var hdr=lines[0].split(d).map(function(x){return x.trim().replace(/^"|"$/g,'')});
+  var tc=hdr.findIndex(function(h){return /time|date|ts|stamp/i.test(h)}),ic=hdr.findIndex(function(h){return /^(ip|src|source|client|remote)|_ip|ip_/i.test(h)}),st=1;
+  if(tc<0){if(isNaN(toTime(hdr[0]))){throw new Error('Не найден столбец времени. Назовите его time или timestamp.')}tc=0;st=0}
+  if(ic<0||ic===tc)ic=tc===0?1:0;
+  var t=[],ip=[];
+  for(var i=st;i<lines.length;i++){var c=lines[i].split(d),tt=toTime(c[tc]),a=(c[ic]||'').trim().replace(/"/g,'');
+    if(!isNaN(tt)&&a){t.push(tt);ip.push(a)}}
+  if(t.length<20)throw new Error('Не удалось разобрать строки. Проверьте столбцы времени и IP.');
+  return {t:t,ip:ip}}
+
+function analyze(D){
+  var n=D.t.length,tmin=Infinity,tmax=-Infinity,i;
+  for(i=0;i<n;i++){if(D.t[i]<tmin)tmin=D.t[i];if(D.t[i]>tmax)tmax=D.t[i]}
+  var bs=Math.max(1,Math.ceil((tmax-tmin+1)/150)),NB=Math.floor((tmax-tmin)/bs)+1;
+  var cnt=new Array(NB).fill(0),ids={},names=[],idOf=new Array(n),bOf=new Array(n),first=[];
+  for(i=0;i<n;i++){var b=Math.floor((D.t[i]-tmin)/bs);bOf[i]=b;cnt[b]++;
+    var k=D.ip[i],id=ids[k];if(id===undefined){id=names.length;ids[k]=id;names.push(k);first.push(b)}idOf[i]=id}
+  var rate=cnt.map(function(c){return c/bs}),sorted=rate.slice().sort(function(a,b){return a-b}),B=Math.max(1,sorted[Math.floor(NB/2)]);
+  var thr=[],incs=[],open=null,hot=0,calm=0,ss=0,lastA=0;
+  for(var b2=0;b2<NB;b2++){thr[b2]=2.5*B;var an=rate[b2]>thr[b2];
+    if(an){if(hot===0)ss=b2;hot++;calm=0;lastA=b2;if(open)open.e=b2;else if(hot>=2)open={s:ss,e:b2}}
+    else{hot=0;calm++;B=.9*B+.1*rate[b2];if(open&&calm>=3){incs.push(open);open=null}}}
+  if(open)incs.push(open);
+  var inc=new Array(NB).fill(-1);incs.forEach(function(x,j){for(var q=x.s;q<=x.e;q++)inc[q]=j});
+  var per={},ipInc={};
+  for(i=0;i<n;i++){if(inc[bOf[i]]>=0){var key=idOf[i]*NB+bOf[i];per[key]=(per[key]||0)+1;ipInc[idOf[i]]=(ipInc[idOf[i]]||0)+1}}
+  var heavy={},peakIp={},HV=50;
+  Object.keys(per).forEach(function(key){var id=Math.floor(key/NB),r=per[key]/bs;if(r>(peakIp[id]||0))peakIp[id]=r;if(r>HV)heavy[id]=1});
+  var incTot=0;
+  incs.forEach(function(x){var tot=0,hv=0,pk=0;
+    for(var q=x.s;q<=x.e;q++){tot+=cnt[q];if(rate[q]>pk)pk=rate[q]}
+    Object.keys(per).forEach(function(key){var b=key%NB,id=Math.floor(key/NB);if(b>=x.s&&b<=x.e&&heavy[id])hv+=per[key]});
+    x.tot=tot;x.peak=pk;x.type=hv/tot>.5?'few':'dist';incTot+=tot});
+  var firstInc=incs.length?incs[0].s:NB,rows=Object.keys(ipInc).map(function(id){id=+id;
+    var v=heavy[id]?'block':first[id]>=firstInc?'check':'ok';return {ip:names[id],n:ipInc[id],pk:peakIp[id]||0,v:v}})
+    .sort(function(a,b){return b.n-a.n});
+  return {n:n,uniq:names.length,bs:bs,NB:NB,rate:rate,thr:thr,inc:inc,incs:incs,incTot:incTot,peak:Math.max.apply(null,rate),rows:rows,
+    block:rows.filter(function(r){return r.v==='block'}).map(function(r){return r.ip}),checks:rows.filter(function(r){return r.v==='check'}).length}}
+
+function fmt(b){var s=Math.round(b*R.bs),h=Math.floor(s/3600),m=Math.floor(s%3600/60),c=s%60,p=function(x){return (x<10?'0':'')+x};
+  return (h?h+':':'')+p(m)+':'+p(c)}
+function num(x){return Math.round(x).toLocaleString('ru-RU')}
+
+function show(res){
+  R=res;$('err').textContent='';$('res').style.display='block';hover=-1;
+  var ni=R.incs.length;
+  $('sum').textContent=ni?'Обнаружено инцидентов: '+ni+'. Атакующий трафик составил '+Math.round(R.incTot/R.n*100)+'% от всех запросов. Рекомендация: заблокировать '+R.block.length+' адресов и включить проверку для '+R.checks+' новых источников.':'Атак не найдено: трафик в пределах нормы.';
+  var K=[['Запросов',R.n,'var(--sky)'],['Уникальных IP',R.uniq,'var(--accent)'],['Пик, запросов/с',R.peak,'var(--warn)'],['Инцидентов',ni,'var(--bad)'],['В зоне атак, %',R.incTot/R.n*100,'var(--ok)']];
+  $('kpi').innerHTML=K.map(function(k,i){return '<div style="--c:'+k[2]+'"><span>'+k[0]+'</span><b data-v="'+k[1]+'">0</b></div>'}).join('');
+  document.querySelectorAll('#kpi b').forEach(function(el){var v=+el.getAttribute('data-v'),t0=null;
+    function f(t){if(!t0)t0=t;var k=Math.min(1,(t-t0)/900),e=1-Math.pow(1-k,3);el.textContent=num(v*e);if(k<1&&!RM)requestAnimationFrame(f)}
+    RM?el.textContent=num(v):requestAnimationFrame(f)});
+  $('inc').innerHTML='<tr><th>Начало</th><th>Конец</th><th>Длительность</th><th>Пик, запросов/с</th><th>Тип атаки</th><th>Действие Blackhole</th></tr>'+
+   (ni?R.incs.map(function(x){var few=x.type==='few';return '<tr><td>'+fmt(x.s)+'</td><td>'+fmt(x.e+1)+'</td><td>'+Math.round((x.e-x.s+1)*R.bs)+' с</td><td>'+num(x.peak)+'</td><td>'+(few?'С малого числа адресов':'Распределённая')+'</td><td><span class="pill '+(few?'p-bad':'p-warn')+'">'+(few?'Блокировка источников':'Проверка новых клиентов')+'</span></td></tr>'}).join(''):'<tr><td colspan="6">Срабатываний нет.</td></tr>');
+  var lab={block:['Блокировать','p-bad'],check:['Проверять','p-warn'],ok:['Норма','p-ok']};
+  $('ips').innerHTML='<tr><th>IP-адрес</th><th>Запросов во время атак</th><th>Пик, запросов/с</th><th>Вердикт</th></tr>'+
+   R.rows.slice(0,12).map(function(r){return '<tr><td>'+r.ip+'</td><td>'+num(r.n)+'</td><td>'+num(r.pk)+'</td><td><span class="pill '+lab[r.v][1]+'">'+lab[r.v][0]+'</span></td></tr>'}).join('');
+  $('bl').value=R.block.length?R.block.join('\n'):'Адресов для блокировки нет.';$('cps').textContent='';
+  animate();$('res').scrollIntoView({behavior:RM?'auto':'smooth',block:'start'})}
+
+function draw(p){
+  var c=$('cv'),r=window.devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;
+  if(c.width!==Math.round(w*r)){c.width=Math.round(w*r);c.height=Math.round(h*r)}
+  var x=c.getContext('2d');x.setTransform(r,0,0,r,0,0);x.clearRect(0,0,w,h);if(!R)return;
+  var s=getComputedStyle(document.documentElement),acc=s.getPropertyValue('--accent').trim(),bad=s.getPropertyValue('--bad').trim(),warn=s.getPropertyValue('--warn').trim(),mute=s.getPropertyValue('--mute').trim();
+  var N=R.NB,max=Math.max(R.peak,1)*1.1,pl=8,pr=8,pt=10,pb=22,W=w-pl-pr,H=h-pt-pb;
+  function X(i){return pl+i/Math.max(1,N-1)*W}function Y(v){return pt+H-v/max*H}
+  x.globalAlpha=.14;x.fillStyle=bad;
+  R.incs.forEach(function(q){x.fillRect(X(q.s)-W/N/2,pt,(q.e-q.s+1)*W/Math.max(1,N-1),H)});x.globalAlpha=1;
+  x.strokeStyle=warn;x.setLineDash([5,4]);x.lineWidth=1.5;x.beginPath();
+  R.thr.forEach(function(v,i){i?x.lineTo(X(i),Y(v)):x.moveTo(X(i),Y(v))});x.stroke();x.setLineDash([]);
+  var last=Math.max(1,Math.floor((N-1)*p));
+  x.strokeStyle=acc;x.lineWidth=2.4;x.lineJoin='round';x.beginPath();
+  for(var i=0;i<=last;i++){i?x.lineTo(X(i),Y(R.rate[i])):x.moveTo(X(i),Y(R.rate[i]))}x.stroke();
+  x.fillStyle=mute;x.font='12px Onest,system-ui,sans-serif';x.textAlign='left';x.fillText(fmt(0),pl,h-6);x.textAlign='right';x.fillText(fmt(N-1),w-pr,h-6);
+  if(hover>=0&&p>=1){x.strokeStyle=mute;x.lineWidth=1;x.beginPath();x.moveTo(X(hover),pt);x.lineTo(X(hover),pt+H);x.stroke();
+    x.fillStyle=R.inc[hover]>=0?bad:acc;x.beginPath();x.arc(X(hover),Y(R.rate[hover]),4,0,7);x.fill()}}
+var raf=0;
+function animate(){cancelAnimationFrame(raf);if(RM){draw(1);return}var t0=null;
+  function f(t){if(!t0)t0=t;var k=Math.min(1,(t-t0)/1100);draw(1-Math.pow(1-k,3));if(k<1)raf=requestAnimationFrame(f)}raf=requestAnimationFrame(f)}
+$('cv').addEventListener('pointermove',function(e){if(!R)return;var c=this.getBoundingClientRect(),i=Math.round((e.clientX-c.left-8)/(c.width-16)*(R.NB-1));
+  hover=Math.max(0,Math.min(R.NB-1,i));var tp=$('tip');tp.hidden=false;
+  tp.textContent=fmt(hover)+' · '+num(R.rate[hover])+' запросов/с'+(R.inc[hover]>=0?' · атака':'');draw(1)});
+$('cv').addEventListener('pointerleave',function(){hover=-1;$('tip').hidden=true;draw(1)});
+window.addEventListener('resize',function(){draw(1)});
+
+function run(fn){try{$('err').textContent='';show(analyze(fn()))}catch(e){$('err').textContent=e.message||'Не удалось обработать файл.'}}
+$('up').addEventListener('click',function(){$('file').click()});
+$('file').addEventListener('change',function(){var f=this.files[0];if(!f)return;
+  f.text().then(function(t){run(function(){return parseCsv(t)})},function(){$('err').textContent='Не удалось прочитать файл.'});this.value=''});
+
+function demo(){
+  var base=1780000000,t=[],ip=[],i,s,k;
+  function L(k){return '198.51.'+(k/250|0)+'.'+(k%250+1)}
+  for(s=0;s<600;s++){var n=40+Math.round((Math.random()-.5)*10);for(i=0;i<n;i++){t.push(base+s);ip.push(L(Math.floor(Math.random()*300)))}
+    if(s>=180&&s<240)for(i=0;i<600;i++){k=Math.floor(Math.random()*2000);t.push(base+s);ip.push('203.0.'+(k>>8)+'.'+(k&255))}
+    if(s>=420&&s<460)for(i=0;i<800;i++){t.push(base+s);ip.push('45.83.17.'+(1+i%5))}}
+  return {t:t,ip:ip}}
+$('demo').addEventListener('click',function(){run(demo)});
+
+$('cp').addEventListener('click',function(){var ta=$('bl'),m=$('cps');
+  function ok(){m.textContent='Скопировано.'}
+  function fb(){ta.removeAttribute('readonly');ta.select();try{document.execCommand('copy')?ok():m.textContent='Выделено, нажмите «Копировать» в меню.'}catch(e){m.textContent='Выделите текст и скопируйте вручную.'}ta.setAttribute('readonly','')}
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(ta.value).then(ok,fb);else fb()});
+</script>
+</body>
+</html>

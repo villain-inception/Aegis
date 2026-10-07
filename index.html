@@ -128,13 +128,14 @@ footer{background:var(--deep);color:rgba(255,255,255,.78);border:0;padding:22px 
 .sg-end{text-align:center;padding:24px 10px}.sg-end h3{font-size:1.5rem;margin:0 0 6px}
 @media (max-width:600px){.sg-st{grid-template-columns:1fr 1fr}.sg-st>div:first-child{grid-column:1/-1}}
 @media (prefers-reduced-motion:reduce){.sg-hp i,.sg-b i,.sg-s{transition:none}.sg.run .sg-b .a{animation:none}}
-.cta{display:inline-block;margin-top:6px;padding:13px 26px;border-radius:12px;background:var(--accent);color:#fff;font-weight:700;text-decoration:none;transition:transform .15s,background .15s}.cta:hover{background:#0a5c56;transform:translateY(-2px)}
+.cta{display:inline-block;margin-top:6px;padding:13px 26px;border-radius:12px;background:var(--accent);color:#fff;font-weight:700;text-decoration:none;transition:transform .15s,background .15s}.cta.alt{background:transparent;color:var(--accent);border:2px solid var(--accent);padding:11px 22px}.cta.alt:hover{background:rgba(15,118,110,.1)}
+.cta:hover{background:#0a5c56;transform:translateY(-2px)}
 </style>
 </head>
 <body>
 <div class="band"><div class="wrap">
 <header><div class="logo">Aegis</div>
-<nav><a href="#relevance">Актуальность</a><a href="#aims">Задачи</a><a href="#s1">Атаки</a><a href="#s2">Прототип</a><a href="#s3">Рекомендации</a><a href="#game">Игра</a><a href="#strategy">Стратегия</a><a href="#survey">Опрос</a><a href="#team">Команда</a></nav></header>
+<nav><a href="#relevance">Актуальность</a><a href="#aims">Задачи</a><a href="#s1">Атаки</a><a href="#s2">Прототип</a><a href="#s3">Рекомендации</a><a href="#game">Игра</a><a href="#strategy">Стратегия</a><a href="#monitor">Монитор</a><a href="#survey">Опрос</a><a href="#team">Команда</a></nav></header>
 <div class="hero">
 <p class="tag">Метод защиты Blackhole · IT 19-26 Corporation</p>
 <h1>Обнаружение и фильтрация DDoS-трафика</h1>
@@ -245,6 +246,11 @@ footer{background:var(--deep);color:rgba(255,255,255,.78);border:0;padding:22px 
 <h2>Стратегия: пережить волны атак</h2>
 <p class="lead" style="margin-top:0">Перед каждой волной вы видите, какие атаки идут. Покупайте защиту за кредиты так, чтобы закрыть все три направления, и продержитесь 8 волн. Одно решение на все случаи не работает: нужна многоуровневая защита.</p>
 <div class="sg" id="sg"></div>
+</section>
+<section id="monitor">
+<h2>Aegis Monitor: метод в работе</h2>
+<p class="lead" style="margin-top:0">Рабочий прототип: загрузите журнал запросов к серверу (файл CSV со столбцами «время» и «IP»), и Blackhole найдёт моменты атак, покажет график и составит список адресов для блокировки. Всё считается прямо в браузере, файл никуда не отправляется. Нет своего файла? Нажмите «Демо-данные» на странице монитора.</p>
+<a class="cta" href="aegis-monitor.html">Открыть монитор</a> <a class="cta alt" href="aegis-sample-log.csv" download>Пример CSV</a> <a class="cta alt" href="blackhole.py" download>Код метода (Python)</a>
 </section>
 <section id="survey">
 <h2>Опрос для первокурсников</h2>

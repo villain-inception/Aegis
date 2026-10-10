@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="teal" data-design="tech">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -270,9 +270,24 @@ footer{background:var(--deep);color:rgba(255,255,255,.78);border:0;padding:22px 
 .rt i{display:block;height:100%;width:0;background:var(--accent);border-radius:6px;transition:width .8s}
 .rr b{font-variant-numeric:tabular-nums;white-space:nowrap}
 @media (prefers-reduced-motion:reduce){.rt i{transition:none}}
+/* Fixed presentation mode: Tech design + green Aegis accent only */
+.themes{display:none!important}
+
+/* Выводы по актуальным ответам опроса */
+.survey-conclusions{margin-top:22px;padding:18px;border:1px dashed var(--accent);background:var(--card);box-shadow:6px 6px 0 var(--line)}
+.survey-conclusions>h3{margin:0 0 6px;font-size:1.12rem}
+.survey-conclusions-intro{margin:0 0 14px;color:var(--mute);font-size:.92rem}
+.survey-conclusions-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.survey-conclusion{min-width:0;padding:14px;background:var(--bg);border:1px solid var(--line)}
+.survey-conclusion-metric{font:800 1.25rem/1.3 'JetBrains Mono',ui-monospace,monospace;color:var(--accent);overflow-wrap:anywhere}
+.survey-conclusion h4{font-size:.96rem;line-height:1.35;margin:8px 0 5px}
+.survey-conclusion p{font-size:.9rem;line-height:1.5;margin:0;color:var(--mute)}
+[data-design=tech] .survey-conclusions,[data-design=tech] .survey-conclusion{border-radius:2px}
+@media(max-width:560px){.survey-conclusions{padding:14px}.survey-conclusions-grid{grid-template-columns:1fr}}
+
 </style>
-<script>try{var t=localStorage.getItem('aegis_theme');if(t&&t!=='teal')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
-<script>try{var dg=localStorage.getItem('aegis_design');if(dg&&dg!=='classic')document.documentElement.setAttribute('data-design',dg)}catch(e){}</script>
+<script>document.documentElement.setAttribute('data-theme','teal');</script>
+<script>document.documentElement.setAttribute('data-design','tech');</script>
 </head>
 <body>
 <div class="band"><div class="wrap">
@@ -655,27 +670,22 @@ tick();
 if(!RM)requestAnimationFrame(loop);
 </script>
 <script>
-(function(){var d=document.documentElement,t='teal';
-try{t=localStorage.getItem('aegis_theme')||'teal'}catch(e){}
-if(t!=='teal')d.setAttribute('data-theme',t);
-document.querySelectorAll('.themes button').forEach(function(b){b.addEventListener('click',function(){
-var n=b.getAttribute('data-th');if(n===t)return;
-try{localStorage.setItem('aegis_theme',n)}catch(e){}
-location.reload()})})})();
+// Palette is intentionally fixed to Aegis teal-green.
+document.documentElement.setAttribute('data-theme','teal');
 </script>
 <div id="tprog" aria-hidden="true"></div>
 <div class="tbar" aria-hidden="true"><span>aegis://blackhole</span><span id="tsec">главная</span><span><button id="tk" type="button">Ctrl K</button> <b id="tpct">0%</b></span></div>
 <div id="cmdk" hidden><div class="cmd" role="dialog" aria-label="Переход к разделу"><input id="cmdi" placeholder="Перейти к разделу… (Esc закрыть)" aria-label="Поиск раздела" autocomplete="off"><ul id="cmdl"></ul></div></div>
 <script>
-(function(){var d=document.documentElement,el=document.getElementById('design'),v='classic',io=null;
+(function(){var d=document.documentElement,el=document.getElementById('design'),v='tech',io=null;
 function reveal(on){if(!on){d.classList.remove('rv');return}
   d.classList.add('rv');
   if(!io&&'IntersectionObserver' in window){io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('vis')})},{threshold:.06});document.querySelectorAll('section').forEach(function(x){io.observe(x)})}
   else if(!io)document.querySelectorAll('section').forEach(function(x){x.classList.add('vis')})}
 function apply(x){v=x;if(x==='classic')d.removeAttribute('data-design');else d.setAttribute('data-design',x);reveal(x==='tech')}
-try{v=localStorage.getItem('aegis_design')||'classic'}catch(e){}
-el.value=v;apply(v);
-el.addEventListener('change',function(){apply(el.value);try{localStorage.setItem('aegis_design',v)}catch(e){}});
+el.value='tech';
+el.disabled=true;
+apply('tech');
 /* HUD: прогресс, раздел, процент */
 var secs=[].slice.call(document.querySelectorAll('section[id]')),ts=document.getElementById('tsec'),tp=document.getElementById('tpct'),pg=document.getElementById('tprog'),tk=false;
 function upd(){tk=false;var max=d.scrollHeight-innerHeight,pc=max>0?Math.round(scrollY/max*100):0,cur='главная';
@@ -812,6 +822,71 @@ function render(d){root.textContent='';
   var ints=Object.keys(d.ints||{}).sort(function(a,b){return d.ints[b]-d.ints[a]}).map(function(k){return[k,d.ints[k]]});
   g.appendChild(bars('Что интересно узнать',ints,d.n));
   root.appendChild(g);
+
+  // Выводы автоматически пересчитываются по актуальным данным опроса.
+  var conclusions = el('div','survey-conclusions');
+  conclusions.appendChild(el('h3',null,'Выводы по опросу'));
+  conclusions.appendChild(el('p','survey-conclusions-intro',
+    'Что видно по ответам участников и на что стоит обратить внимание в обучении.'));
+  var cg = el('div','survey-conclusions-grid');
+  function conclusion(metric,title,body){
+    var card=el('article','survey-conclusion');
+    card.appendChild(el('div','survey-conclusion-metric',metric));
+    card.appendChild(el('h4',null,title));
+    card.appendChild(el('p',null,body));
+    cg.appendChild(card);
+  }
+  function count(obj,key){return Number((obj||{})[key])||0}
+  function pct(value){return Math.round((Number(value)||0)*100)}
+  function sharePct(value,total){return total?Math.round(value/total*100):0}
+  var know=d.know||{}, imp=d.imp||{}, ints=d.ints||{};
+  var canExplain=count(know,'Могу объяснить другому');
+  var limitedKnowledge=count(know,'Не знаю')+count(know,'Слышал(а) название');
+  var ddosPct=pct(o.ddos), botPct=pct(o.bot), lawPct=pct(o.law), passPct=pct(o.pass);
+  var updateGroups=Math.round((Number(o.upd)||0)*d.n);
+  var updatePct=sharePct(updateGroups,d.n);
+
+  conclusion(ddosPct+'% / '+botPct+'%',
+    'Основы DDoS знают лучше, чем понятие ботнета',
+    'Правильно определили DDoS '+Math.round((Number(o.ddos)||0)*d.n)+' из '+d.n+
+    ' участников, а ботнет — '+Math.round((Number(o.bot)||0)*d.n)+
+    '. Значит, терминологию и роль заражённых устройств полезно разобрать подробнее.');
+  conclusion(canExplain+' из '+d.n,
+    'Уверенность в знаниях различается',
+    canExplain+' участник(а) заявили, что могут объяснить DDoS другому человеку; '+
+    limitedKnowledge+' выбрали «Не знаю» или «Слышал(а) название». Полезны материалы и для начинающих, и для тех, кто хочет закрепить знания.');
+  conclusion(lawPct+'%',
+    'Не все уверенно знают правовые границы',
+    Math.round((Number(o.law)||0)*d.n)+' из '+d.n+
+    ' выбрали ответ, что проверка без разрешения владельца незаконна. Остальным стоит отдельно объяснить необходимость разрешения и безопасного учебного стенда.');
+  conclusion(passPct+'% / '+updatePct+'%',
+    'Цифровая гигиена требует внимания',
+    passPct+'% сообщили, что сменили пароль роутера. По обновлениям '+updatePct+
+    '% попали в группы «сразу» или «раз в несколько месяцев»; эти варианты объединены в сводной статистике, поэтому показатель не означает, что все обновляют устройства немедленно.');
+
+  var imp5=0, impTotal=0, impSum=0;
+  Object.keys(imp).forEach(function(k){
+    var v=count(imp,k), num=parseInt(k,10);
+    impTotal+=v;
+    if(num)impSum+=num*v;
+    if(num===5)imp5+=v;
+  });
+  var topTopics=Object.keys(ints).map(function(k){return [k,count(ints,k)]})
+    .sort(function(a,b){return b[1]-a[1]});
+  var topicText=topTopics.length
+    ? 'Чаще всего выбирали «'+topTopics[0][0]+'» ('+topTopics[0][1]+' отметок)'+
+      (topTopics.length>1?'; далее — «'+topTopics[1][0]+'» ('+topTopics[1][1]+' отметок).':'.')
+    : 'Пока недостаточно данных о выбранных темах.';
+  conclusion(impTotal?(impSum/impTotal).toFixed(1).replace('.',',')+' из 5':'—',
+    'Тему считают важной и хотят практики',
+    (impTotal?Math.round(imp5/impTotal*100)+'% поставили максимальную оценку важности. ':'')+
+    topicText+' Это поддерживает идею добавлять практические материалы по защите устройств и работе в кибербезопасности.');
+
+  conclusions.appendChild(cg);
+  conclusions.appendChild(el('p','src',
+    'Выводы описывают только ответы участников этого опроса; их нельзя автоматически переносить на всех студентов.'));
+  root.appendChild(conclusions);
+
   if(d.n<10)root.appendChild(el('p','src','Ответов пока мало ('+d.n+'), поэтому цифры ориентировочные.'));
   setTimeout(function(){root.querySelectorAll('.rt i').forEach(function(f){f.style.width=f.getAttribute('data-w')+'%'})},60)}
 // Apps Script ContentService может отвечать через редирект, который fetch()

@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="teal" data-design="tech">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aegis: Blackhole — фильтрация DDoS-трафика</title>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;700;800&family=Nunito:wght@400;700;900&family=JetBrains+Mono:wght@400;700;800&family=Lora:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f6f5;--card:#fff;--ink:#14201d;--mute:#4f5e59;--line:#d3dcd8;--accent:#0f766e;--ok:#2f8f46;--warn:#b8740a;--bad:#c93a26;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Onest,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.6}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px}
+header{display:flex;justify-content:space-between;align-items:center;padding:18px 0;flex-wrap:wrap;gap:8px}
+.logo{font-weight:800;font-size:1.2rem}
+nav a{color:var(--mute);text-decoration:none;margin-left:14px;font-weight:500;font-size:.95rem}
+nav a:hover{color:var(--accent)}
+a:focus-visible,input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+h1{font-size:clamp(1.9rem,5.5vw,3rem);line-height:1.12;margin:20px 0 12px;font-weight:800;max-width:20ch}
+h2{font-size:1.65rem;margin:0 0 12px;font-weight:800}
+h3{font-size:1.1rem;margin:22px 0 8px}
+.lead{font-size:1.1rem;color:var(--mute);max-width:60ch}
+section{padding:42px 0;border-top:1px solid var(--line)}
+.quote{background:var(--card);border-left:4px solid var(--accent);padding:16px 20px;border-radius:0 14px 14px 0;font-size:1.05rem}
+.facts{margin:20px 0 6px}
+.f{display:grid;grid-template-columns:150px 1fr;gap:4px 20px;padding:12px 0;border-top:1px solid var(--line)}
+.f b{font-size:1.2rem;color:var(--accent)}
+.src{font-size:.85rem;color:var(--mute)}
+ol.tasks{padding-left:22px;margin:0}
+ol.tasks li{margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:.95rem}
+.tw{overflow-x:auto}
+th,td{text-align:left;padding:10px 12px;border-top:1px solid var(--line);vertical-align:top}
+th{color:var(--mute);font-weight:500;border-top:0}
+td:first-child{font-weight:700;white-space:nowrap}
+.sim{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-top:20px}
+.ctl{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+select{font:inherit;padding:8px 10px;border-radius:10px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
+label.sw{display:flex;gap:8px;align-items:center;font-weight:500;cursor:pointer}
+canvas{width:100%;height:190px;display:block;background:var(--bg);border-radius:12px}
+.leg{display:flex;gap:16px;flex-wrap:wrap;font-size:.85rem;color:var(--mute);margin:8px 0 14px}
+.leg i{display:inline-block;width:14px;height:3px;margin-right:6px;vertical-align:middle}
+.m{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.m div{background:var(--bg);border-radius:12px;padding:12px}
+.m span{display:block;font-size:.8rem;color:var(--mute)}
+.m b{font-size:1.25rem}
+.note{background:var(--card);border-left:4px solid var(--warn);padding:14px 18px;border-radius:0 12px 12px 0;margin-top:20px}
+ul.c{padding-left:20px;margin:0}ul.c li{margin-bottom:10px}
+.steps{counter-reset:s;list-style:none;padding:0;margin:14px 0}
+.steps li{counter-increment:s;padding-left:38px;position:relative;margin-bottom:12px}
+.steps li:before{content:counter(s);position:absolute;left:0;top:0;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;text-align:center;font-weight:700;font-size:.85rem;line-height:26px}
+footer{padding:26px 0 40px;color:var(--mute);font-size:.9rem;border-top:1px solid var(--line)}
+@media (max-width:600px){.f{grid-template-columns:1fr}nav a{margin:0 12px 0 0}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+:root{--deep:#0a3532;--mint:#7ff0d0;--sky:#2b6cb0;--coral:#e2553f;--sun:#d98e0b}
+.band{background:linear-gradient(135deg,var(--deep) 0%,var(--accent) 100%);color:#fff;overflow:hidden}
+.band .logo{color:#fff}.band nav a{color:rgba(255,255,255,.78)}.band nav a:hover{color:var(--mint)}
+.band a:focus-visible{outline-color:var(--mint)}
+.hero{padding:6px 0 28px}
+.hero h1{color:#fff;animation:up .8s both}
+.hero .tag{color:var(--mint);font-weight:700;margin:0 0 6px;animation:up .8s .15s both}
+.hero .lead{color:rgba(255,255,255,.85);animation:up .8s .3s both}
+@keyframes up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.flow{position:relative;height:66px;margin-top:14px}
+.flow:after{content:"";position:absolute;left:58%;top:0;bottom:0;width:4px;border-radius:2px;background:var(--mint);box-shadow:0 0 16px var(--mint)}
+.p{position:absolute;left:0;width:9px;height:9px;border-radius:50%}
+.p.bad{background:var(--coral);animation:stop var(--t) linear infinite;animation-delay:var(--d)}
+.p.good{background:var(--mint);animation:pass var(--t) linear infinite;animation-delay:var(--d)}
+@keyframes stop{0%{left:0;opacity:0}8%{opacity:1}90%{opacity:1}100%{left:57%;opacity:0}}
+@keyframes pass{0%{left:0;opacity:0}8%{opacity:1}92%{opacity:1}100%{left:100%;opacity:0}}
+h2:before{content:"";display:inline-block;width:8px;height:1em;margin-right:10px;border-radius:4px;background:var(--sc,var(--accent));vertical-align:-.12em}
+#relevance{--sc:var(--coral)}#aims{--sc:var(--sky)}#s1{--sc:var(--sun)}#s2{--sc:var(--accent)}#s3{--sc:var(--ok)}
+.f:nth-child(1) b{color:var(--coral)}.f:nth-child(2) b{color:var(--sun)}.f:nth-child(3) b{color:var(--sky)}.f:nth-child(4) b{color:var(--accent)}
+.f b{font-variant-numeric:tabular-nums}
+tr:hover td{background:rgba(15,118,110,.07)}
+td,tr{transition:background .2s}
+.sim{border-top:5px solid var(--accent)}
+.m b{transition:color .3s}
+.steps li:before{background:var(--sc,var(--accent))}
+.js .steps li{opacity:0;transform:translateX(-14px);transition:opacity .5s,transform .5s}
+.js .steps.in li{opacity:1;transform:none}
+.steps.in li:nth-child(2){transition-delay:.15s}.steps.in li:nth-child(3){transition-delay:.3s}.steps.in li:nth-child(4){transition-delay:.45s}.steps.in li:nth-child(5){transition-delay:.6s}
+footer{background:var(--deep);color:rgba(255,255,255,.78);border:0;padding:22px 20px;border-radius:14px 14px 0 0;margin-top:20px}
+@media (prefers-reduced-motion:reduce){.hero h1,.hero .tag,.hero .lead{animation:none}.p{display:none}.js .steps li{opacity:1;transform:none;transition:none}}
+
+.team{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:6px 28px;margin-top:16px}
+.mem{display:flex;gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--line);transition:transform .2s}
+.mem:hover{transform:translateX(4px)}
+.av{flex:none;width:48px;height:48px;border-radius:50%;color:#fff;font-weight:800;display:grid;place-items:center;letter-spacing:.5px}
+.mem b{display:block}.mem span{color:var(--mute);font-size:.92rem}
+#team{--sc:var(--coral)}
+
+#game{--sc:var(--sun)}
+.gw{position:relative;margin-top:16px}
+#gv{height:auto;aspect-ratio:2/1;touch-action:manipulation;cursor:crosshair;border:2px solid var(--line);background:var(--card)}
+.gov{position:absolute;inset:0;background:rgba(10,53,50,.9);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:16px;border-radius:12px}
+.gov[hidden]{display:none}
+.gov h3{margin:0 0 6px;font-size:1.5rem}.gov p{margin:0 0 14px;max-width:44ch;color:rgba(255,255,255,.85)}
+.gbtn{font:inherit;font-weight:700;padding:10px 22px;border:0;border-radius:10px;background:var(--mint);color:var(--deep);cursor:pointer}
+.gbtn.alt{background:var(--accent);color:#fff}.gbtn:disabled{opacity:.55;cursor:not-allowed}
+.gc{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.gk{font-size:.9rem;color:var(--mute)}
+
+#strategy{--sc:var(--sky)}
+.sg{margin-top:16px}
+.sg-st{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:16px}
+.sg-st>div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.sg-st span{display:block;font-size:.8rem;color:var(--mute)}.sg-st b{font-size:1.3rem}
+.sg-hp{height:10px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:6px}
+.sg-hp i{display:block;height:100%;border-radius:6px;transition:width .6s,background .3s}
+.sg-r{margin-bottom:14px}
+.sg-h{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:.95rem}
+.sg-h small{display:block;color:var(--mute);font-size:.8rem}
+.sg-h span{color:var(--mute);font-variant-numeric:tabular-nums}
+.sg-b{height:8px;background:var(--line);border-radius:5px;margin-top:5px;overflow:hidden}
+.sg-b i{display:block;height:100%;border-radius:5px;transition:width .5s}
+.sg-b .a{background:var(--bad)}.sg-b .d{background:var(--ok)}
+.sg.run .sg-b .a{animation:pulse .35s infinite alternate}
+@keyframes pulse{to{opacity:.35}}
+.sg-shop{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:16px 0}
+.sg-s{font:inherit;text-align:left;background:var(--card);color:var(--ink);border:2px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;transition:border-color .2s,transform .2s}
+.sg-s:hover:not(:disabled){border-color:var(--accent);transform:translateY(-2px)}
+.sg-s:disabled{opacity:.5;cursor:not-allowed}
+.sg-s span{display:block;font-size:.85rem;color:var(--mute);margin:3px 0}.sg-s em{font-style:normal;font-size:.85rem;color:var(--accent);font-weight:700}
+.sg-log{background:var(--card);border-left:4px solid var(--sky);padding:12px 16px;border-radius:0 12px 12px 0;margin-top:14px;font-size:.95rem}
+.sg-end{text-align:center;padding:24px 10px}.sg-end h3{font-size:1.5rem;margin:0 0 6px}
+@media (max-width:600px){.sg-st{grid-template-columns:1fr 1fr}.sg-st>div:first-child{grid-column:1/-1}}
+@media (prefers-reduced-motion:reduce){.sg-hp i,.sg-b i,.sg-s{transition:none}.sg.run .sg-b .a{animation:none}}
+.cta{display:inline-block;margin-top:6px;padding:13px 26px;border-radius:12px;background:var(--accent);color:#fff;font-weight:700;text-decoration:none;transition:transform .15s,background .15s}.cta.alt{background:transparent;color:var(--accent);border:2px solid var(--accent);padding:11px 22px}.cta.alt:hover{background:rgba(15,118,110,.1)}
+.cta:hover{background:#0a5c56;transform:translateY(-2px)}
+.src{padding-left:1.3em;margin:6px 0 16px}.src li{margin-bottom:12px;line-height:1.5}.src a{color:var(--accent);word-break:break-word}
+[data-theme=indigo]{--accent:#4338ca;--deep:#1e1b4b;--mint:#a5b4fc}
+[data-theme=amber]{--accent:#b45309;--deep:#451a03;--mint:#fcd34d}
+[data-theme=crimson]{--accent:#be123c;--deep:#4c0519;--mint:#fda4af}
+.themes{display:flex;gap:8px;align-items:center}
+.themes button{width:20px;height:20px;border-radius:50%;border:2px solid rgba(255,255,255,.75);cursor:pointer;padding:0;transition:transform .15s}
+.themes button:hover{transform:scale(1.25)}
+.themes button:focus-visible{outline:3px solid var(--mint);outline-offset:2px}
+.cmp td,.cmp th{font-size:.88rem;vertical-align:top}
+.cmp .me{background:color-mix(in srgb,var(--accent) 10%,transparent);font-weight:600}
+.cmp .y{color:var(--ok);font-weight:700}.cmp .n{color:var(--bad);font-weight:700}.cmp .pt{color:var(--ink);font-weight:700}
+.cmp small{display:block;font-weight:400;color:var(--mute);font-size:.78rem}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+.two div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.two b{display:block;margin-bottom:4px}
+@media (max-width:640px){.two{grid-template-columns:1fr}}
+
+.themes select{font:inherit;font-size:.85rem;padding:4px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.14);color:#fff;cursor:pointer}
+.themes select option{color:#14201d;background:#fff}
+/* ===== Дизайн 2: Мягкий ===== */
+[data-design=soft] body,[data-design=soft] h1,[data-design=soft] h2,[data-design=soft] h3,[data-design=soft] .logo{font-family:Nunito,Onest,system-ui,sans-serif}
+[data-design=soft] h1,[data-design=soft] h2,[data-design=soft] h3,[data-design=soft] .logo{font-weight:900}
+[data-design=soft] .band{border-radius:0 0 40px 40px}
+[data-design=soft] section{border-top:0;padding:34px 0}
+[data-design=soft] h2:before{width:14px;height:14px;border-radius:50%;vertical-align:middle;margin-right:12px}
+[data-design=soft] .sim,[data-design=soft] .quote,[data-design=soft] .note,[data-design=soft] .two div,[data-design=soft] .sg-st>div,[data-design=soft] .sg-s,[data-design=soft] .sg-log,[data-design=soft] .m div{border-radius:24px}
+[data-design=soft] .sim{border-top-width:1px;box-shadow:0 12px 32px rgba(20,32,29,.09)}
+[data-design=soft] .quote,[data-design=soft] .note,[data-design=soft] .sg-log{border-left:0;box-shadow:0 6px 20px rgba(20,32,29,.07)}
+[data-design=soft] canvas,[data-design=soft] #gv{border-radius:20px}
+[data-design=soft] .cta,[data-design=soft] .gbtn,[data-design=soft] .tw,[data-design=soft] select{border-radius:999px}
+[data-design=soft] .tw{border-radius:20px}
+[data-design=soft] th,[data-design=soft] td{border-top:0}
+[data-design=soft] tr:nth-child(even) td{background:rgba(127,127,127,.07)}
+[data-design=soft] .mem{border-top:0;background:var(--card);border-radius:20px;padding:12px 16px;margin-bottom:10px}
+/* ===== Дизайн 3: Техно ===== */
+[data-design=tech] body{background-image:linear-gradient(color-mix(in srgb,var(--line) 45%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in srgb,var(--line) 45%,transparent) 1px,transparent 1px);background-size:40px 40px}
+[data-design=tech] h1,[data-design=tech] h2,[data-design=tech] h3,[data-design=tech] .logo,[data-design=tech] nav a,[data-design=tech] th,[data-design=tech] .tag,[data-design=tech] .cta,[data-design=tech] .gbtn,[data-design=tech] .f b{font-family:'JetBrains Mono',ui-monospace,monospace}
+[data-design=tech] h1{letter-spacing:-.02em}
+[data-design=tech] h2{font-size:1.3rem;text-transform:uppercase;letter-spacing:.04em}
+[data-design=tech] h2:before{content:"//";width:auto;height:auto;background:none;border-radius:0;color:var(--sc,var(--accent));font-weight:800;margin-right:10px}
+[data-design=tech] section{border-top:1px dashed var(--accent)}
+[data-design=tech] .sim,[data-design=tech] .quote,[data-design=tech] .note,[data-design=tech] .two div,[data-design=tech] .sg-st>div,[data-design=tech] .sg-s,[data-design=tech] .sg-log,[data-design=tech] .m div,[data-design=tech] .cta,[data-design=tech] .gbtn,[data-design=tech] select,[data-design=tech] canvas,[data-design=tech] #gv{border-radius:2px}
+[data-design=tech] .sim{border:1px solid var(--accent);box-shadow:6px 6px 0 var(--line)}
+[data-design=tech] .quote,[data-design=tech] .note,[data-design=tech] .sg-log{border-radius:0}
+[data-design=tech] th{text-transform:uppercase;font-size:.78rem;letter-spacing:.06em}
+[data-design=tech] .av,[data-design=tech] .steps li:before{border-radius:6px}
+[data-design=tech] .band{border-bottom:3px solid var(--mint)}
+/* ===== Дизайн 4: Журнал ===== */
+[data-design=magazine] body{counter-reset:sec;font-size:17px;line-height:1.7}
+[data-design=magazine] h1,[data-design=magazine] h2,[data-design=magazine] h3,[data-design=magazine] .logo,[data-design=magazine] .f b{font-family:Lora,Georgia,serif;font-weight:700}
+[data-design=magazine] h2{font-size:2.1rem;line-height:1.15;margin-bottom:16px}
+[data-design=magazine] section{counter-increment:sec;padding:56px 0;border-top:2px solid var(--ink)}
+[data-design=magazine] h2:before{content:counter(sec,decimal-leading-zero);display:block;width:auto;height:auto;background:none;border-radius:0;font-family:Onest,sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.2em;color:var(--sc,var(--accent));margin:0 0 6px}
+[data-design=magazine] .lead{font-family:Lora,Georgia,serif;font-size:1.2rem}
+[data-design=magazine] .quote{background:transparent;border-left:0;border-top:3px solid var(--accent);border-radius:0;font-family:Lora,Georgia,serif;font-size:1.15rem;padding:16px 0}
+[data-design=magazine] .f b{font-size:2rem}
+[data-design=magazine] .sim,[data-design=magazine] .note,[data-design=magazine] .two div,[data-design=magazine] .sg-st>div,[data-design=magazine] .sg-s,[data-design=magazine] .sg-log,[data-design=magazine] .m div,[data-design=magazine] canvas,[data-design=magazine] #gv{border-radius:4px}
+[data-design=magazine] .sim{border-top-width:1px}
+[data-design=magazine] .cta,[data-design=magazine] .gbtn{border-radius:0;letter-spacing:.04em;text-transform:uppercase;font-size:.85rem}
+/* ===== Дизайн 5: Карточки ===== */
+[data-design=cards] body{background:color-mix(in srgb,var(--line) 40%,var(--bg))}
+[data-design=cards] .band{border-radius:0 0 32px 32px}
+[data-design=cards] section{background:var(--card);border:1px solid var(--line);border-radius:28px;padding:30px 28px;margin:18px 0;box-shadow:0 6px 24px rgba(20,32,29,.06)}
+[data-design=cards] h2:before{width:14px;height:14px;border-radius:50%;vertical-align:middle;margin-right:12px}
+[data-design=cards] .sim,[data-design=cards] .quote,[data-design=cards] .note,[data-design=cards] .two div,[data-design=cards] .sg-st>div,[data-design=cards] .sg-s,[data-design=cards] .sg-log{background:var(--bg)}
+[data-design=cards] .sim{border-top-width:1px;border-radius:20px}
+@media (max-width:640px){[data-design=cards] section{padding:22px 18px;border-radius:22px}}
+
+/* ===== Техно: улучшения ===== */
+.term,.tbar,#tprog{display:none}
+[data-design=tech]{scrollbar-color:var(--accent) var(--bg)}
+[data-design=tech] ::selection{background:var(--accent);color:#fff}
+[data-design=tech] body{font-size:15px;line-height:1.7;padding-bottom:36px}
+[data-design=tech] nav a{font-size:.85rem}
+[data-design=tech] nav a:hover:before{content:"> "}
+[data-design=tech] .band{position:relative}
+[data-design=tech] .band:after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.04) 0 1px,transparent 1px 3px)}
+[data-design=tech] .hero h1{text-shadow:0 0 28px color-mix(in srgb,var(--mint) 45%,transparent)}
+[data-design=tech] .hero h1:before{content:"> ";color:var(--mint)}
+[data-design=tech] .term{display:block;margin:18px 0 8px;max-width:560px;padding:12px 14px;border:1px solid rgba(255,255,255,.28);border-radius:4px;background:rgba(0,0,0,.3);font:13px/1.7 'JetBrains Mono',ui-monospace,monospace;color:rgba(255,255,255,.92);position:relative;z-index:1}
+[data-design=tech] .term span{display:block;opacity:0;animation:tl .01s forwards;animation-delay:calc(var(--i)*.7s + .6s)}
+[data-design=tech] .term b{color:var(--mint);font-weight:700}
+[data-design=tech] .term .cur{display:inline-block;width:8px;height:1em;background:var(--mint);vertical-align:text-bottom;animation:bk 1s steps(2) infinite}
+@keyframes tl{to{opacity:1}}@keyframes bk{50%{opacity:0}}
+[data-design=tech] h2:after{content:"_";color:var(--sc,var(--accent));margin-left:4px;animation:bk 1.2s steps(2) infinite}
+[data-design=tech] .sim,[data-design=tech] .two div,[data-design=tech] .m div,[data-design=tech] .sg-s,[data-design=tech] .sg-st>div{position:relative;transition:box-shadow .2s,transform .2s}
+[data-design=tech] .sim:before,[data-design=tech] .two div:before,[data-design=tech] .m div:before,[data-design=tech] .sg-st>div:before{content:"";position:absolute;top:-1px;left:-1px;width:12px;height:12px;border-top:3px solid var(--accent);border-left:3px solid var(--accent);pointer-events:none}
+[data-design=tech] .sim:after,[data-design=tech] .two div:after,[data-design=tech] .m div:after,[data-design=tech] .sg-st>div:after{content:"";position:absolute;bottom:-1px;right:-1px;width:12px;height:12px;border-bottom:3px solid var(--accent);border-right:3px solid var(--accent);pointer-events:none}
+[data-design=tech] .two div:hover,[data-design=tech] .m div:hover{box-shadow:5px 5px 0 var(--accent);transform:translate(-2px,-2px)}
+[data-design=tech] .f b{text-shadow:0 0 18px color-mix(in srgb,currentColor 35%,transparent)}
+[data-design=tech] td:first-child:before{content:"> ";color:var(--accent);opacity:0;transition:opacity .15s}
+[data-design=tech] tr:hover td:first-child:before{opacity:1}
+[data-design=tech] .cta:before{content:"$ ";opacity:.75}
+[data-design=tech] footer:before{content:"$ exit 0";display:block;color:var(--mint);margin-bottom:6px}
+[data-design=tech] #tprog{display:block;position:fixed;top:0;left:0;height:3px;width:0;background:var(--mint);box-shadow:0 0 10px var(--mint);z-index:41}
+[data-design=tech] .tbar{display:flex;position:fixed;left:0;right:0;bottom:0;height:28px;z-index:40;align-items:center;justify-content:space-between;gap:12px;padding:0 14px;background:var(--deep);color:var(--mint);font:12px 'JetBrains Mono',ui-monospace,monospace}
+.tbar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tbar span:nth-child(2){flex:1;text-align:center;color:rgba(255,255,255,.85)}
+.tbar button{font:inherit;color:var(--mint);background:transparent;border:1px solid var(--mint);border-radius:3px;padding:0 6px;cursor:pointer}
+@media (max-width:560px){.tbar span:first-child{display:none}}
+[data-design=tech].rv section{opacity:0;transform:translateY(18px);transition:opacity .6s,transform .6s}
+[data-design=tech].rv section.vis{opacity:1;transform:none}
+#cmdk{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-start;justify-content:center;padding-top:14vh;background:rgba(10,53,50,.55);backdrop-filter:blur(3px)}
+#cmdk[hidden]{display:none}
+.cmd{width:min(520px,92vw);background:var(--card);border:1px solid var(--accent);box-shadow:8px 8px 0 var(--accent);font-family:'JetBrains Mono',ui-monospace,monospace}
+.cmd input{width:100%;font:inherit;padding:14px 16px;border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--ink);outline:none}
+.cmd ul{list-style:none;margin:0;padding:6px;max-height:50vh;overflow:auto}
+.cmd li{padding:9px 12px;cursor:pointer;font-size:.92rem}
+.cmd li.on{background:var(--accent);color:#fff}
+@media (prefers-reduced-motion:reduce){.term span{animation:none;opacity:1}.term .cur,[data-design=tech] h2:after{animation:none}[data-design=tech].rv section{opacity:1;transform:none;transition:none}}
+
+#terminal{--sc:var(--accent)}
+.tmn{background:var(--deep);border-radius:14px;overflow:hidden;font:13.5px/1.6 'JetBrains Mono',ui-monospace,monospace;color:#d9fff3;box-shadow:0 10px 30px rgba(10,53,50,.25);margin-top:16px}
+.tbarw{display:flex;gap:7px;align-items:center;padding:10px 14px;background:rgba(0,0,0,.25);color:rgba(255,255,255,.65);font-size:12px}
+.tbarw i{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.35)}.tbarw span{margin-left:8px}
+.tout{height:340px;overflow-y:auto;padding:12px 16px;white-space:pre-wrap;word-break:break-word}
+.tout div{min-height:1.6em}.tout .ok{color:var(--mint)}.tout .err{color:#ff9aa6}.tout .mut{color:rgba(255,255,255,.58)}.tout .acc{color:#fff;font-weight:700}
+.tin{display:flex;gap:8px;align-items:center;padding:10px 16px;border-top:1px solid rgba(255,255,255,.14)}
+.tin span{color:var(--mint);white-space:nowrap}
+.tin input{flex:1;min-width:0;font:inherit;color:#fff;background:transparent;border:0;outline:none;caret-color:var(--mint)}
+.tchips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.tchips button{font:inherit;font-size:.85rem;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.tchips button:hover{border-color:var(--accent);color:var(--accent)}
+[data-design=tech] .tmn{border-radius:2px;box-shadow:6px 6px 0 var(--line)}
+[data-design=tech] .tchips button{border-radius:2px}
+@media (max-width:560px){.tin span{display:none}.tmn{font-size:12.5px}}
+
+#results{--sc:var(--sun)}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0}
+.kc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.kc b{display:block;font-size:1.9rem;color:var(--accent);line-height:1.2}.kc span{color:var(--mute);font-size:.9rem}
+.rg{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:700px){.rg{grid-template-columns:1fr}}
+.rb{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.rb h3{margin:0 0 10px;font-size:1rem}
+.rr{display:grid;grid-template-columns:minmax(90px,38%) 1fr auto;gap:10px;align-items:center;margin-bottom:8px;font-size:.88rem}
+.rl{overflow-wrap:anywhere}
+.rt{height:10px;background:var(--line);border-radius:6px;overflow:hidden}
+.rt i{display:block;height:100%;width:0;background:var(--accent);border-radius:6px;transition:width .8s}
+.rr b{font-variant-numeric:tabular-nums;white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.rt i{transition:none}}
+/* Fixed presentation mode: Tech design + green Aegis accent only */
+.themes{display:none!important}
+
+/* Выводы по актуальным ответам опроса */
+.survey-conclusions{margin-top:22px;padding:18px;border:1px dashed var(--accent);background:var(--card);box-shadow:6px 6px 0 var(--line)}
+.survey-conclusions>h3{margin:0 0 6px;font-size:1.12rem}
+.survey-conclusions-intro{margin:0 0 14px;color:var(--mute);font-size:.92rem}
+.survey-conclusions-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.survey-conclusion{min-width:0;padding:14px;background:var(--bg);border:1px solid var(--line)}
+.survey-conclusion-metric{font:800 1.25rem/1.3 'JetBrains Mono',ui-monospace,monospace;color:var(--accent);overflow-wrap:anywhere}
+.survey-conclusion h4{font-size:.96rem;line-height:1.35;margin:8px 0 5px}
+.survey-conclusion p{font-size:.9rem;line-height:1.5;margin:0;color:var(--mute)}
+[data-design=tech] .survey-conclusions,[data-design=tech] .survey-conclusion{border-radius:2px}
+@media(max-width:560px){.survey-conclusions{padding:14px}.survey-conclusions-grid{grid-template-columns:1fr}}
+
+</style>
+<script>document.documentElement.setAttribute('data-theme','teal');</script>
+<script>document.documentElement.setAttribute('data-design','tech');</script>
+</head>
+<body>
+<div class="band"><div class="wrap">
+<header><div class="logo">Aegis</div>
+<nav><a href="#relevance">Актуальность</a><a href="#aims">Задачи</a><a href="#s1">Атаки</a><a href="#s2">Прототип</a><a href="#s3">Рекомендации</a><a href="#compare">Сравнение</a><a href="#game">Игра</a><a href="#strategy">Стратегия</a><a href="#monitor">Монитор</a><a href="#terminal">Терминал</a><a href="#survey">Опрос</a><a href="#results">Результаты</a><a href="#team">Команда</a><a href="#sources">Источники</a></nav><div class="themes" role="group" aria-label="Цветовая тема"><button data-th="teal" style="background:#0f766e" aria-label="Бирюзовая"></button><button data-th="indigo" style="background:#4338ca" aria-label="Индиго"></button><button data-th="amber" style="background:#b45309" aria-label="Янтарная"></button><button data-th="crimson" style="background:#be123c" aria-label="Малиновая"></button><select id="design" aria-label="Дизайн страницы"><option value="classic">Дизайн: Классика</option><option value="soft">Дизайн: Мягкий</option><option value="tech">Дизайн: Техно</option><option value="magazine">Дизайн: Журнал</option><option value="cards">Дизайн: Карточки</option></select></div></header>
+<div class="hero">
+<p class="tag">Метод защиты Blackhole · IT 19-26 Corporation</p>
+<h1>Обнаружение и фильтрация DDoS-трафика</h1>
+<p class="lead">Исследовательский проект: как выглядят современные DDoS-атаки, почему привычные методы защиты не всегда справляются и как автоматическая фильтрация может сократить ущерб.</p>
+<div class="term" aria-hidden="true"><span style="--i:0"><b>$</b> aegis scan sample.csv</span><span style="--i:1">&gt; baseline (EWMA) ... <b>ok</b></span><span style="--i:2">&gt; порог всплеска 2.5x ... <b>ok</b></span><span style="--i:3">&gt; атак найдено: <b>2</b> · в блок-лист: <b>3 IP</b></span><span style="--i:4"><b>$</b> <i class="cur"></i></span></div>
+<div class="flow" id="flow" aria-hidden="true"></div>
+</div>
+</div></div>
+<div class="wrap">
+<main>
+
+<section id="relevance">
+<h2>Актуальность проекта</h2>
+<p class="quote">Актуальность темы обусловлена беспрецедентным ростом масштабов и сложности DDoS-атак, которые в 2025–2026 годах перешли в новую фазу гиперобъемных угроз, способных нарушить работу критической инфраструктуры за секунды.</p>
+<div class="facts">
+<div class="f"><b>31,4 Тбит/с</b><span>рекордная атака, отражённая Cloudflare в декабре 2025 года (ботнет Aisuru/Kimwolf).</span></div>
+<div class="f"><b>935 атак</b><span>мощнее 1 Тбит/с за первое полугодие 2026 года. Во втором квартале их число выросло более чем в 6 раз по сравнению с первым.</span></div>
+<div class="f"><b>23,2 млн</b><span>атак на сетевом уровне отражено за то же полугодие, в среднем около 128 тысяч в сутки.</span></div>
+<div class="f"><b>90,6%</b><span>атак завершаются менее чем за 10 минут. Самая короткая рекордная атака длилась 35 секунд, то есть у человека нет времени вмешаться вручную.</span></div>
+</div>
+<p class="src">Источник: Cloudflare DDoS Threat Report H1 2026 (blog.cloudflare.com/ddos-threat-report-2026-h1).</p>
+</section>
+
+<section id="aims">
+<h2>Цель и задачи</h2>
+<p>Цель: разработать метод обнаружения и фильтрации DDoS-трафика и оценить, как его применять на практике.</p>
+<ol class="tasks">
+<li>Изучить современные DDoS-атаки и недостатки существующих методов защиты.</li>
+<li>Разработать метод или прототип обнаружения и фильтрации DDoS-трафика.</li>
+<li>Сформулировать рекомендации по практическому применению разработанного решения.</li>
+</ol>
+</section>
+
+<section id="s1">
+<h2>Задача 1. Современные атаки и слабые места защиты</h2>
+<h3>Что изменилось</h3>
+<ul class="c">
+<li><b>Масштаб.</b> Ботнеты из заражённых роутеров, камер и других устройств дают терабитные потоки.</li>
+<li><b>Скорость.</b> Атака может закончиться за секунды, но последствия (сбои маршрутизации, таймауты) держатся часами.</li>
+<li><b>Смена приёмов.</b> По данным Cloudflare, центр тяжести сместился к атакам с отражением и усилением и к DNS-флудам.</li>
+<li><b>Смешанные векторы.</b> Атакующие сочетают высокую частоту пакетов, большой объём и «тяжёлые» запросы к приложению.</li>
+</ul>
+<h3>Недостатки существующих методов</h3>
+<div class="tw"><table>
+<tr><th>Метод</th><th>Как работает</th><th>Слабое место</th></tr>
+<tr><td>Защита по запросу</td><td>Подключают фильтрацию, когда атака уже идёт</td><td>Слишком медленно: атака может закончиться раньше, чем среагирует человек</td></tr>
+<tr><td>Статические пороги и чёрные списки</td><td>Блокируют адреса или трафик выше заданного уровня</td><td>Не видят распределённый трафик с тысяч адресов; блокируют реальных людей при наплыве посетителей</td></tr>
+<tr><td>Лимит запросов на IP</td><td>Ограничивает частоту запросов от одного адреса</td><td>Обходится распределением нагрузки по множеству адресов</td></tr>
+<tr><td>Облачная фильтрация и CDN</td><td>Очищает трафик на стороне провайдера</td><td>Стоимость, зависимость от одного поставщика, слабая видимость атак на логику приложения</td></tr>
+<tr><td>CAPTCHA и проверки</td><td>Отделяют людей от ботов</td><td>Ухудшают удобство, часть ботов их проходит</td></tr>
+<tr><td>Модели машинного обучения</td><td>Ищут аномалии в трафике</td><td>Нужны качественные данные, модель устаревает, решения трудно объяснить</td></tr>
+</table></div>
+</section>
+
+<section id="s2">
+<h2>Задача 2. Прототип обнаружения и фильтрации: Blackhole</h2>
+<p>Blackhole — наш метод защиты. Он сочетает автоматическое обнаружение, классификацию по источникам и адаптивную фильтрацию. Алгоритм:</p>
+<ol class="steps">
+<li><b>Базовый уровень.</b> Скользящее среднее (EWMA) запоминает обычную интенсивность запросов. Во время тревоги оно не обновляется, чтобы атака не стала «нормой».</li>
+<li><b>Обнаружение.</b> Тревога, если трафик превышает базовый уровень более чем в 2,5 раза два такта подряд.</li>
+<li><b>Классификация.</b> Если есть адреса, шлющие слишком много запросов (больше 50 в секунду), включается блокировка этих источников. Если такие адреса не выделяются, трафик распределённый.</li>
+<li><b>Фильтрация распределённого трафика.</b> Известные клиенты (те, кто уже обращался к сервису) проходят свободно. Новые источники проходят проверку (challenge): люди её проходят, боты в основном нет.</li>
+<li><b>Отбой.</b> Через 5 спокойных тактов фильтр выключается.</li>
+</ol>
+<div class="sim">
+<h3 style="margin-top:0">Симулятор</h3>
+<p class="src" style="margin:0 0 12px">Сервер выдерживает 1000 запросов в секунду, обычные посетители создают около 200. Это учебная модель: реальный трафик не создаётся.</p>
+<div class="ctl">
+<label>Сценарий <select id="sc"><option value="norm">Обычный трафик</option><option value="dist">Распределённая атака (2000 адресов)</option><option value="few">Атака с 5 адресов</option><option value="flash">Наплыв реальных пользователей</option></select></label>
+<label class="sw"><input type="checkbox" id="prot" checked> Фильтр включён</label>
+</div>
+<canvas id="cv" aria-label="График трафика"></canvas>
+<div class="leg"><span><i style="background:var(--bad)"></i>Пришло на вход</span><span><i style="background:var(--ok)"></i>Дошло до сервера</span><span><i style="background:var(--mute)"></i>Ёмкость сервера</span></div>
+<div class="m" aria-live="polite">
+<div><span>Режим фильтра</span><b id="md">Норма</b></div>
+<div><span>Обычные пользователи обслужены</span><b id="ls">100%</b></div>
+<div><span>Атакующий трафик отсечён</span><b id="ab">0%</b></div>
+</div>
+<div class="note" style="margin-top:14px" id="cm"></div>
+</div>
+<p class="src">Значения в модели (доли известных клиентов, вероятность прохождения проверки) заданы условно и нужны для демонстрации логики. Для реального применения их подбирают по журналам собственного сервиса.</p>
+</section>
+
+<section id="s3">
+<h2>Задача 3. Рекомендации по применению</h2>
+<ul class="c">
+<li><b>Автоматика вместо реакции по тревоге.</b> Обнаружение и фильтрация должны работать постоянно: окно для ручных действий измеряется секундами.</li>
+<li><b>Многоуровневая схема.</b> Объёмные атаки отсекает провайдер или облачная фильтрация, а такой прототип уместен на уровне приложения и сервера, где нужна тонкая классификация.</li>
+<li><b>Знать свой нормальный трафик.</b> Собирайте статистику в спокойное время, отдельно учитывайте сезонные пики и распродажи.</li>
+<li><b>Список известных клиентов.</b> Пропускайте проверенных пользователей мимо строгих фильтров, чтобы снизить число ложных блокировок.</li>
+<li><b>Проверки только при тревоге.</b> Включайте challenge только для новых источников и только пока идёт аномалия.</li>
+<li><b>Запас и резерв.</b> Несколько каналов, кэширование, отдельное масштабирование «тяжёлых» функций (поиск, формы).</li>
+<li><b>План действий.</b> Контакты провайдера, ответственные, порядок публичных сообщений и разбор инцидента после атаки.</li>
+<li><b>Гигиена устройств.</b> Смена паролей по умолчанию и обновление прошивок уменьшают размер ботнетов.</li>
+</ul>
+<div class="note"><b>Ограничения.</b> Прототип демонстрирует принцип на упрощённой модели. Перед внедрением его нужно проверить на записанном реальном трафике и в изолированном стенде. Испытания на чужих системах без письменного разрешения запрещены и незаконны.</div>
+</section>
+<section id="compare">
+<h2>Чем Aegis отличается от других сервисов</h2>
+<p class="lead" style="margin-top:0">Мы сравнили проект с тремя типами похожих ресурсов: справочниками (например, Cloudflare Learning Center), картами атак (Digital Attack Map) и платной защитой (например, Cloudflare DDoS Protection).</p>
+<div class="tw"><table class="cmp">
+<tr><th>Что умеет</th><th class="me">Aegis</th><th>Справочники</th><th>Карты атак</th><th>Платная защита</th></tr>
+<tr><td>Симулятор «атака и защита» в браузере</td><td class="me y">✓ Да</td><td class="n">✕ Нет</td><td class="n">✕ Нет</td><td class="n">✕ Нет</td></tr>
+<tr><td>Игры по теме</td><td class="me y">✓ Две игры</td><td class="n">✕ Нет</td><td class="n">✕ Нет</td><td class="n">✕ Нет</td></tr>
+<tr><td>Разбор вашего журнала запросов</td><td class="me y">✓ Загрузите CSV</td><td class="n">✕ Нет</td><td class="n">✕ Нет</td><td class="pt">◐ Только для клиентов</td></tr>
+<tr><td>Открытый код метода</td><td class="me y">✓ blackhole.py</td><td class="n">✕ Только описание</td><td class="n">✕ Нет</td><td class="n">✕ Закрытый</td></tr>
+<tr><td>Бесплатно, без регистрации</td><td class="me y">✓ Да</td><td class="y">✓ Да</td><td class="y">✓ Да</td><td class="pt">◐ Нужен аккаунт и подключение сайта</td></tr>
+<tr><td>Данные об атаках со всего мира</td><td class="me pt">◐ Берём из отчёта Cloudflare</td><td class="pt">◐ Частично</td><td class="y">✓ Да</td><td class="y">✓ Да</td></tr>
+<tr><td>Защита настоящего сайта</td><td class="me n">✕ Учебный прототип</td><td class="n">✕ Нет</td><td class="n">✕ Нет</td><td class="y">✓ Да</td></tr>
+</table></div>
+<div class="two">
+<div><b>Где мы сильнее</b>Учат на практике: можно попробовать атаку и защиту самому, разобрать свой журнал и заглянуть в код метода.</div>
+<div><b>Где сильнее они</b>Реальные данные со всего мира и настоящая защита сайтов. Aegis их не заменяет, а помогает понять, как это работает.</div>
+</div>
+<p class="lead" style="font-size:.85rem">Сравнение по открытым описаниям сервисов на 7 октября 2026 года. Список примеров не исчерпывающий.</p>
+</section>
+<section id="game">
+<h2>Игра: защити сервер</h2>
+<p class="lead" style="margin-top:0">Побудьте в роли фильтра. <b style="color:var(--bad)">Красные ромбы</b> — атакующие запросы: нажмите на них, чтобы отбросить. <b style="color:var(--ok)">Зелёные круги</b> — обычные пользователи: их трогать нельзя. Проходит атака — сервер теряет здоровье.</p>
+<div class="gw">
+<canvas id="gv" aria-label="Игра: защити сервер от DDoS"></canvas>
+<div class="gov" id="gov"><h3 id="gt">Защити сервер</h3><p id="gp">Отбрасывайте красные запросы и пропускайте зелёные. Кнопка Blackhole на 4 секунды включает автоматическую фильтрацию у барьера.</p><button class="gbtn" id="gs">Играть</button></div>
+</div>
+<div class="gc"><button class="gbtn alt" id="bhb">Blackhole (пробел)</button><span class="gk" id="gb">Рекорд: 0</span></div>
+<p class="src">Как и в проекте: фильтр должен останавливать атаку, но не задевать настоящих пользователей. Ошибочная блокировка зелёного запроса тоже снижает здоровье сервера.</p>
+</section>
+<section id="strategy">
+<h2>Стратегия: пережить волны атак</h2>
+<p class="lead" style="margin-top:0">Перед каждой волной вы видите, какие атаки идут. Покупайте защиту за кредиты так, чтобы закрыть все три направления, и продержитесь 8 волн. Одно решение на все случаи не работает: нужна многоуровневая защита.</p>
+<div class="sg" id="sg"></div>
+</section>
+<section id="monitor">
+<h2>Aegis Monitor: метод в работе</h2>
+<p class="lead" style="margin-top:0">Рабочий прототип: загрузите журнал запросов к серверу (файл CSV со столбцами «время» и «IP»), и Blackhole найдёт моменты атак, покажет график и составит список адресов для блокировки. Всё считается прямо в браузере, файл никуда не отправляется. Нет своего файла? Нажмите «Демо-данные» на странице монитора.</p>
+<a class="cta" href="aegis-monitor.html">Открыть монитор</a> <a class="cta alt" href="aegis-sample-log.csv" download>Пример CSV</a> <a class="cta alt" href="blackhole.py" download>Код метода (Python)</a>
+</section>
+<section id="terminal">
+<h2>Мини-терминал</h2>
+<p class="lead" style="margin-top:0">Метод Blackhole в командной строке: создайте учебный журнал трафика с атакой и посмотрите, что найдёт алгоритм. Введите <b>help</b> или нажмите на кнопку ниже.</p>
+<div class="tmn" id="tmn"><div class="tbarw"><i></i><i></i><i></i><span>aegis: bash</span></div>
+<div class="tout" id="tout" role="log" aria-live="polite"></div>
+<div class="tin"><span>aegis@blackhole:~$</span><input id="tcmd" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Командная строка"></div></div>
+<div class="tchips"><button type="button" data-c="help">help</button><button type="button" data-c="scan">scan</button><button type="button" data-c="scan few">scan few</button><button type="button" data-c="scan dist">scan dist</button><button type="button" data-c="scan flash">scan flash</button><button type="button" data-c="blocklist">blocklist</button><button type="button" data-c="explain">explain</button><button type="button" data-c="team">team</button></div>
+</section>
+<section id="survey">
+<h2>Опрос для первокурсников</h2>
+<p class="lead" style="margin-top:0">Проверьте, что вы знаете о DDoS-атаках и цифровой безопасности. 11 вопросов, около 3 минут, анонимно. В конце вы увидите свой результат и разбор ответов.</p>
+<a class="cta" href="aegis-survey.html">Пройти опрос</a>
+</section>
+<section id="results">
+<h2>Результаты опроса</h2>
+<p class="lead" style="margin-top:0">Что знают и как защищают свои устройства первокурсники. Данные собираются из анонимного опроса и обновляются при открытии страницы.</p>
+<div id="res"><p class="src">Загружаю результаты…</p></div>
+</section>
+<section id="team">
+<h2>Разработчики</h2>
+<p class="lead" style="margin-top:0">Проект Aegis и метод Blackhole создала команда IT 19-26 Corporation.</p>
+<div class="team">
+<div class="mem"><div class="av" style="background:var(--coral)">DZ</div><div><b>Damir Z.</b><span>Founder &amp; CEO</span></div></div>
+<div class="mem"><div class="av" style="background:var(--sky)">AG</div><div><b>Alex G.</b><span>Head of Engineering</span></div></div>
+<div class="mem"><div class="av" style="background:var(--sun)">DL</div><div><b>Dmitriy L.</b><span>Technical Lead</span></div></div>
+<div class="mem"><div class="av" style="background:var(--accent)">DR</div><div><b>Daniel R.</b><span>Solutions Architect</span></div></div>
+</div>
+</section>
+</main>
+<section id="sources">
+<h2>Источники</h2>
+<p class="lead" style="margin-top:0">Данные об атаках и описания методов защиты взяты из открытых источников. Ссылки проверены 7 октября 2026 года.</p>
+<ol class="src">
+<li><b>Cloudflare. DDoS Threat Report H1 2026</b> (Cloudforce One). Статистика атак, рекорд 31,4 Тбит/с, рост атак выше 1 Тбит/с. Используется в разделе «Актуальность». <a href="https://blog.cloudflare.com/ddos-threat-report-2026-h1/" target="_blank" rel="noopener">blog.cloudflare.com/ddos-threat-report-2026-h1</a></li>
+<li><b>BleepingComputer. DDoS attacks over 1 Tbps surged fivefold in the second quarter</b> (11 августа 2026). Независимый пересказ отчёта Cloudflare. <a href="https://www.bleepingcomputer.com/news/security/ddos-attacks-over-1-tbps-surged-fivefold-in-the-second-quarter/" target="_blank" rel="noopener">bleepingcomputer.com</a></li>
+<li><b>CISA, FBI, MS-ISAC. Understanding and Responding to Distributed Denial-of-Service Attacks</b> (2024). Деление атак на объёмные, протокольные и прикладные, рекомендации по защите. Используется в разделе «Атаки» и «Рекомендации». <a href="https://www.cisa.gov/resources-tools/resources/understanding-and-responding-distributed-denial-service-attacks" target="_blank" rel="noopener">cisa.gov</a></li>
+<li><b>RFC 5635. Remote Triggered Black Hole Filtering with Unicast Reverse Path Forwarding</b> (2009). Техника «чёрной дыры» на сетевом уровне, от которой взято название метода Blackhole. <a href="https://www.rfc-editor.org/rfc/rfc5635" target="_blank" rel="noopener">rfc-editor.org/rfc/rfc5635</a></li>
+<li><b>RFC 4987. TCP SYN Flooding Attacks and Common Mitigations</b> (2007). Устройство SYN-флуда и способы защиты. <a href="https://www.rfc-editor.org/rfc/rfc4987" target="_blank" rel="noopener">rfc-editor.org/rfc/rfc4987</a></li>
+<li><b>RFC 2827. Network Ingress Filtering: Defeating Denial of Service Attacks which employ IP Source Address Spoofing</b> (2000, BCP 38). Фильтрация поддельных адресов отправителя. <a href="https://www.rfc-editor.org/rfc/rfc2827" target="_blank" rel="noopener">rfc-editor.org/rfc/rfc2827</a></li>
+<li><b>Digital Attack Map</b> (Google Ideas / Jigsaw и Arbor Networks). Живая карта DDoS-атак; использована в сравнении как пример ресурса-карты. <a href="https://www.digitalattackmap.com" target="_blank" rel="noopener">digitalattackmap.com</a></li>
+</ol>
+<p class="lead"><b>Собственные материалы проекта.</b> Симулятор, игры, Aegis Monitor и пример журнала запросов сделаны командой IT 19-26 Corporation. Это учебная модель, а не измерения на реальной сети. Опрос первокурсников проводился анонимно среди студентов колледжа.</p>
+</section>
+<footer>Проект Aegis. Создатели: IT 19-26 Corporation. Учебный проект по кибербезопасности. <a href="aegis-survey.html" style="color:#7ff0d0">Пройти опрос</a>. Данные по атакам: Cloudflare DDoS Threat Report H1 2026.</footer>
+</div>
+<script>
+var $=function(i){return document.getElementById(i)};
+var CAP=1000,B=200,hot=0,calm=0,mode='ok',H=[],W=[];
+var names={ok:'Норма',block:'Блокировка источников',challenge:'Проверка новых клиентов'};
+function rnd(a){return (Math.random()*2-1)*a}
+function tick(){
+  var sc=$('sc').value,prot=$('prot').checked;
+  var L=200+rnd(15),F=sc==='flash'?700+rnd(60):0,A=(sc==='dist'||sc==='few')?3000+rnd(200):0;
+  var off=L+F+A,anom=off>2.5*B;
+  if(anom){hot++;calm=0}else{calm++;hot=0;B=0.9*B+0.1*off}
+  if(prot){
+    var maxIp=sc==='few'?A/5:sc==='dist'?A/2000:F/1500;
+    if(hot>=2&&mode==='ok')mode=maxIp>50?'block':'challenge';
+    if(mode!=='ok'&&calm>=5)mode='ok';
+  }else mode='ok';
+  var pL=L,pF=F,pA=A;
+  if(mode==='block'){pA=sc==='few'?0:A}
+  if(mode==='challenge'){pL=L*(0.95+0.05*0.9);pF=F*(0.4+0.6*0.9);pA=A*0.03}
+  var P=pL+pF+pA,f=P>CAP?CAP/P:1;
+  H.push({off:off,pass:Math.min(P,CAP*1.05),lo:L+F,ls:(pL+pF)*f,ao:A,ap:pA});
+  if(H.length>60)H.shift();
+  T0=performance.now();show(sc,prot);draw();
+}
+function show(sc,prot){
+  var lo=0,ls=0,ao=0,ap=0;H.slice(-30).forEach(function(h){lo+=h.lo;ls+=h.ls;ao+=h.ao;ap+=h.ap});
+  $('md').textContent=names[mode];
+  $('md').style.color=mode==='ok'?'var(--ok)':mode==='block'?'var(--bad)':'var(--warn)';
+  var lp=Math.round(ls/lo*100);$('ls').textContent=lp+'%';$('ls').style.color=lp<80?'var(--bad)':lp<95?'var(--warn)':'var(--ok)';
+  $('ab').textContent=ao>0?Math.round((1-ap/ao)*100)+'%':'—';
+  var t={norm:'Трафик в норме, фильтр ничего не блокирует.',
+  dist:prot?'Тревога: трафик вырос в разы, но выделить одного виновника нельзя. Включается проверка новых источников, боты её в основном не проходят.':'Без фильтра сервер перегружен, обычные пользователи получают ответ лишь на часть запросов.',
+  few:prot?'Пять адресов шлют сотни запросов в секунду. Прототип выделяет их и блокирует по признаку частоты.':'Без фильтра пять адресов забирают почти всю ёмкость сервера.',
+  flash:prot?'Пик создают настоящие люди. Фильтр включает проверку новых клиентов, и небольшая часть реальных посетителей отсеивается. Это цена ложного срабатывания.':'Наплыв пользователей сервер выдерживает, ложных блокировок нет.'};
+  $('cm').textContent=t[sc];
+}
+var T0=performance.now();
+function draw(){
+  var c=$('cv'),r=window.devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight,n=H.length;
+  if(c.width!==Math.round(w*r)){c.width=Math.round(w*r);c.height=Math.round(h*r)}
+  var x=c.getContext('2d');x.setTransform(r,0,0,r,0,0);x.clearRect(0,0,w,h);
+  if(n<2)return;
+  var s=getComputedStyle(document.documentElement),MAX=3600,now=performance.now(),k=RM?1:Math.min(1,(now-T0)/400),st=w/59;
+  var bad=s.getPropertyValue('--bad').trim(),ok=s.getPropertyValue('--ok').trim(),mute=s.getPropertyValue('--mute').trim();
+  function Y(v){return h-4-Math.min(v,MAX)/MAX*(h-8)}
+  function X(i){return w-(n-1-i)*st+(1-k)*st}
+  x.globalAlpha=.08;x.fillStyle=bad;x.fillRect(0,0,w,Y(CAP));x.globalAlpha=1;
+  if(mode!=='ok'&&!RM){x.globalAlpha=.06+.04*Math.sin(now/220);x.fillStyle=ok;x.fillRect(0,Y(CAP),w,h);x.globalAlpha=1}
+  x.beginPath();x.strokeStyle=mute;x.setLineDash([5,4]);x.lineWidth=1.5;x.moveTo(0,Y(CAP));x.lineTo(w,Y(CAP));x.stroke();x.setLineDash([]);
+  x.beginPath();H.forEach(function(p,i){i?x.lineTo(X(i),Y(p.pass)):x.moveTo(X(i),Y(p.pass))});
+  x.lineTo(X(n-1),h);x.lineTo(X(0),h);x.closePath();x.globalAlpha=.2;x.fillStyle=ok;x.fill();x.globalAlpha=1;
+  function line(col,fn){x.beginPath();x.strokeStyle=col;x.lineWidth=2.2;x.lineJoin='round';
+    H.forEach(function(p,i){i?x.lineTo(X(i),Y(fn(p))):x.moveTo(X(i),Y(fn(p)))});x.stroke()}
+  line(bad,function(p){return p.off});line(ok,function(p){return p.pass});
+  var xe=Math.min(X(n-1),w-6);
+  x.beginPath();x.fillStyle=ok;x.arc(xe,Y(H[n-1].pass),RM?4:4+2*Math.sin(now/200),0,7);x.fill();
+}
+function loop(){draw();requestAnimationFrame(loop)}
+var RM=matchMedia('(prefers-reduced-motion:reduce)').matches;
+document.body.classList.add('js');
+if(!RM){var fl=$('flow');for(var i=0;i<18;i++){var d=document.createElement('span'),bad=i%3!==0;d.className='p '+(bad?'bad':'good');d.style.top=(4+Math.random()*52)+'px';d.style.setProperty('--t',(3.5+Math.random()*2)+'s');d.style.setProperty('--d',(-Math.random()*5)+'s');fl.appendChild(d)}}
+function count(el){var m=el.textContent.match(/^([\d.,]+)(.*)$/);if(!m||RM)return;
+ var raw=m[1],dec=(raw.split(',')[1]||'').length,n=parseFloat(raw.replace(',','.')),rest=m[2],t0=null;
+ function f(t){if(!t0)t0=t;var k=Math.min(1,(t-t0)/1300),e=1-Math.pow(1-k,3);
+  el.textContent=(n*e).toFixed(dec).replace('.',',')+rest;if(k<1)requestAnimationFrame(f)}
+ requestAnimationFrame(f)}
+if('IntersectionObserver' in window){
+ var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){
+  if(e.target.classList.contains('steps'))e.target.classList.add('in');else count(e.target);io.unobserve(e.target)}})},{threshold:.4});
+ document.querySelectorAll('.f b,.steps').forEach(function(el){io.observe(el)});
+}else document.querySelectorAll('.steps').forEach(function(el){el.classList.add('in')});
+
+(function(){
+var cv=$('gv'),g=cv.getContext('2d'),W=640,HH=320,BAR=400,SX=568;cv.width=W;cv.height=HH;
+var st='idle',P=[],fx=[],rings=[],pt=[],hitT=0,hp=100,score=0,kills=0,t=0,sp=0,bh=0,bcd=0,best=0,last=0;
+try{best=+localStorage.getItem('aegis_best')||0}catch(e){}
+function col(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+function pop(x,y,txt,c){fx.push({x:x,y:y,txt:txt,c:c,l:1})}
+function start(){P=[];fx=[];rings=[];pt=[];hitT=0;hp=100;score=0;kills=0;t=0;sp=0;bh=0;bcd=0;st='play';$('gov').hidden=true;last=performance.now()}
+function over(){st='over';var nb=score>best;if(nb){best=score;try{localStorage.setItem('aegis_best',best)}catch(e){}}
+ $('gt').textContent='Сервер упал';$('gp').textContent='Счёт: '+score+'. Отражено атак: '+kills+'.'+(nb?' Новый рекорд!':'')+' Настоящие системы делают это автоматически и за доли секунды.';
+ $('gs').textContent='Играть снова';$('gov').hidden=false}
+function impact(y){hitT=.6;rings.push({x:SX,y:y,r:8,l:1,c:'--bad',big:1});
+ for(var i=0;i<18;i++){var a=Math.PI*(.6+Math.random()*.8),v=60+Math.random()*140;pt.push({x:SX,y:y,vx:Math.cos(a)*v,vy:Math.sin(a)*v*(Math.random()<.5?1:-1),l:1,c:'--bad'})}}
+function fxStep(dt){hitT=Math.max(0,hitT-dt);
+ rings.forEach(function(o){o.r+=dt*(o.big?150:90);o.l-=dt*(o.big?1.8:2.4)});rings=rings.filter(function(o){return o.l>0});
+ pt.forEach(function(o){o.x+=o.vx*dt;o.y+=o.vy*dt;if(o.sm){o.vy-=dt*8;o.l-=dt*.5}else{o.vx*=.97;o.l-=dt*1.5}});pt=pt.filter(function(o){return o.l>0})}
+function boost(){if(st==='play'&&bcd<=0){bh=4;bcd=14}}
+function update(dt){
+ t+=dt;bh=Math.max(0,bh-dt);bcd=Math.max(0,bcd-dt);sp-=dt;
+ if(sp<=0){sp=Math.max(.26,1-t*.012);
+  P.push({x:-10,y:28+Math.random()*(HH-56),v:(70+Math.min(130,t*2.2))*(.85+Math.random()*.3),bad:Math.random()<Math.min(.75,.4+t*.006)})}
+ P.forEach(function(p){p.x+=p.v*dt;
+  if(p.bad&&bh>0&&p.x>=BAR){p.d=1;kills++;score+=3;pop(BAR,p.y,'+3',col('--accent'));rings.push({x:BAR,y:p.y,r:6,l:1,c:'--accent'})}
+  else if(p.x>=SX){p.d=1;if(p.bad){hp-=8;pop(SX-20,p.y,'-8',col('--bad'));impact(p.y)}else{score+=2;rings.push({x:SX,y:p.y,r:6,l:1,c:'--ok'})}}});
+ P=P.filter(function(p){return !p.d});
+ if(hp<30&&hp>0&&Math.random()<dt*7)pt.push({x:SX+20+Math.random()*30,y:26,vx:(Math.random()-.5)*20,vy:-25-Math.random()*15,l:1,sm:1});
+ fx.forEach(function(f){f.l-=dt*1.4;f.y-=dt*30});fx=fx.filter(function(f){return f.l>0});
+ if(hp<=0){hp=0;over()}
+}
+function hit(e){
+ if(st!=='play')return;e.preventDefault();
+ var r=cv.getBoundingClientRect(),k=W/r.width,mx=(e.clientX-r.left)*k,my=(e.clientY-r.top)*k,bi=-1,bd=900;
+ P.forEach(function(p,i){var d=(p.x-mx)*(p.x-mx)+(p.y-my)*(p.y-my);if(d<bd){bd=d;bi=i}});
+ if(bi<0)return;var p=P.splice(bi,1)[0];
+ if(p.bad){kills++;score+=10;pop(p.x,p.y,'+10',col('--ok'))}else{hp-=5;pop(p.x,p.y,'-5',col('--bad'))}
+}
+function drawServer(sc,bad,ink){
+ var now=performance.now(),x0=SX-4,w=W-6-x0,y0=26,h=HH-52,n=5,uh=(h-16)/n,lit=Math.ceil(hp/20),sh=(hitT>0&&!RM)?Math.sin(now/22)*hitT*9:0;
+ g.save();g.translate(sh,0);
+ g.fillStyle='#16302e';g.fillRect(x0,y0,w,h);g.lineWidth=3;g.strokeStyle=hitT>0?bad:sc;g.strokeRect(x0,y0,w,h);
+ for(var i=0;i<n;i++){var uy=y0+8+i*uh,on=(n-1-i)<lit;
+  g.fillStyle=on?'#22403d':'#1a2322';g.fillRect(x0+6,uy+2,w-12,uh-4);
+  if(on){g.fillStyle=Math.sin(now/180+i*1.7)>0?sc:'#3a5a55';g.beginPath();g.arc(x0+15,uy+uh/2,3.5,0,7);g.fill();
+   g.fillStyle=sc;g.globalAlpha=.6;g.beginPath();g.arc(x0+26,uy+uh/2,3,0,7);g.fill();g.globalAlpha=1;
+   g.fillStyle='#33524e';for(var j=0;j<3;j++)g.fillRect(x0+w-30+j*7,uy+8,3,uh-16)}}
+ if(hitT>0){g.globalAlpha=Math.min(.75,hitT*1.3);g.fillStyle=bad;g.fillRect(x0,y0,w,h);g.globalAlpha=1}
+ g.restore();
+ g.font='700 13px Onest,system-ui,sans-serif';g.textAlign='center';g.fillStyle=ink;g.fillText('Сервер '+Math.round(hp)+'%',x0+w/2,18);
+}
+function render(){
+ var ok=col('--ok'),bad=col('--bad'),ink=col('--ink'),mute=col('--mute'),line=col('--line'),acc=col('--accent'),warn=col('--warn');
+ g.clearRect(0,0,W,HH);
+ g.strokeStyle=line;g.lineWidth=1;for(var y=40;y<HH;y+=48){g.beginPath();g.moveTo(0,y);g.lineTo(SX,y);g.stroke()}
+ g.fillStyle=bh>0?acc:mute;g.globalAlpha=bh>0?.9:.35;g.fillRect(BAR-2,0,bh>0?5:3,HH);g.globalAlpha=1;
+ drawServer(hp>60?ok:hp>30?warn:bad,bad,ink);
+ P.forEach(function(p){if(p.bad){g.fillStyle=bad;g.beginPath();g.moveTo(p.x,p.y-12);g.lineTo(p.x+12,p.y);g.lineTo(p.x,p.y+12);g.lineTo(p.x-12,p.y);g.closePath();g.fill()}
+  else{g.fillStyle=ok;g.beginPath();g.arc(p.x,p.y,10,0,7);g.fill()}});
+ rings.forEach(function(o){g.globalAlpha=Math.max(0,o.l);g.strokeStyle=col(o.c);g.lineWidth=o.big?4:2;g.beginPath();g.arc(o.x,o.y,o.r,0,7);g.stroke()});
+ pt.forEach(function(o){g.globalAlpha=Math.max(0,o.l*(o.sm?.5:1));g.fillStyle=o.sm?mute:bad;g.beginPath();g.arc(o.x,o.y,o.sm?4+(1-o.l)*8:1+2.5*o.l,0,7);g.fill()});
+ g.globalAlpha=1;
+ if(hitT>0&&!RM){g.globalAlpha=hitT*.22;g.fillStyle=bad;g.fillRect(0,0,W,HH);g.globalAlpha=1}
+ g.font='700 15px Onest,system-ui,sans-serif';g.textAlign='center';
+ fx.forEach(function(f){g.globalAlpha=Math.max(0,f.l);g.fillStyle=f.c;g.fillText(f.txt,f.x,f.y);g.globalAlpha=1});
+ g.textAlign='left';g.fillStyle=ink;g.fillText('Счёт: '+score+'   Уровень: '+(1+Math.floor(t/15)),12,22);
+ $('bhb').disabled=(bcd>0||st!=='play');
+ $('bhb').textContent=bh>0?'Blackhole активен: '+Math.ceil(bh)+' с':bcd>0?'Blackhole: перезарядка '+Math.ceil(bcd)+' с':'Blackhole (пробел)';
+ $('gb').textContent='Рекорд: '+Math.max(best,st==='play'?0:0)+(st==='play'?'':'');
+}
+function step(now){var dt=Math.min(.05,(now-last)/1000);last=now;if(st==='play')update(dt);fxStep(dt);render();requestAnimationFrame(step)}
+cv.addEventListener('pointerdown',hit);
+$('gs').addEventListener('click',start);
+$('bhb').addEventListener('click',boost);
+document.addEventListener('keydown',function(e){if(e.code==='Space'&&st==='play'&&!/INPUT|SELECT|BUTTON/.test(e.target.tagName)){e.preventDefault();boost()}});
+last=performance.now();requestAnimationFrame(step);
+})();
+
+(function(){
+var V=[['v','Объёмный флуд','Забивает канал огромным потоком данных'],['s','SYN flood','Переполняет таблицу TCP-соединений'],['h','HTTP flood','Засыпает приложение «тяжёлыми» запросами']];
+var D={cloud:{n:'Облачная фильтрация',c:60,v:60,s:20,h:20},syn:{n:'Защита от SYN-флуда',c:35,v:0,s:55,h:0},waf:{n:'WAF и лимит запросов',c:35,v:0,s:0,h:55},bh:{n:'Blackhole (наш метод)',c:55,v:25,s:30,h:30}};
+var W=[{v:50,s:0,h:0},{v:0,s:60,h:0},{v:30,s:0,h:60},{v:110,s:40,h:0},{v:0,s:100,h:60},{v:140,s:0,h:90},{v:150,s:110,h:90},{v:220,s:150,h:150}];
+var hp,money,wave,own,log,state,busy;
+var root=document.getElementById('sg');
+function init(){hp=100;money=80;wave=0;own={cloud:0,syn:0,waf:0,bh:0};log='';state='play';busy=false;render()}
+function def(){var d={v:0,s:0,h:0};for(var k in own)V.forEach(function(x){d[x[0]]+=own[k]*D[k][x[0]]});return d}
+function render(){
+ if(state!=='play'){
+  var win=state==='win';
+  root.className='sg';
+  root.innerHTML='<div class="sg-end"><h3>'+(win?'Сервер выстоял все 8 волн':'Сервер упал на волне '+(wave+1))+'</h3><p class="lead" style="margin:0 auto 14px">'+(win?'Комбинация разных уровней защиты сработала лучше, чем любое одно решение.':'Закрывайте каждый вектор атаки, а не только самый громкий. Слабое место всегда найдёт нагрузку.')+'</p><button class="gbtn alt" data-a="restart">Играть снова</button></div>'+(log?'<div class="sg-log">'+log+'</div>':'');
+  return}
+ var a=W[wave],d=def(),hc=hp>60?'var(--ok)':hp>30?'var(--warn)':'var(--bad)';
+ var h='<div class="sg-st"><div><span>Здоровье сервера</span><b>'+hp+'</b><div class="sg-hp"><i style="width:'+hp+'%;background:'+hc+'"></i></div></div><div><span>Кредиты</span><b>'+money+'</b></div><div><span>Волна</span><b>'+(wave+1)+' из '+W.length+'</b></div></div>';
+ V.forEach(function(x){var k=x[0];
+  h+='<div class="sg-r"><div class="sg-h"><div><b>'+x[1]+'</b><small>'+x[2]+'</small></div><span>Атака '+a[k]+' · Защита '+d[k]+'</span></div><div class="sg-b"><i class="a" style="width:'+Math.min(100,a[k]/260*100)+'%"></i></div><div class="sg-b"><i class="d" style="width:'+Math.min(100,d[k]/260*100)+'%"></i></div></div>'});
+ h+='<div class="sg-shop">';
+ for(var k in D){var x=D[k];h+='<button class="sg-s" data-a="buy" data-k="'+k+'"'+(money<x.c||busy?' disabled':'')+'><b>'+x.n+'</b><span>'+x.c+' кр. · объём +'+x.v+', SYN +'+x.s+', HTTP +'+x.h+'</span><em>Куплено: '+own[k]+'</em></button>'}
+ h+='</div><button class="gbtn alt" data-a="go"'+(busy?' disabled':'')+'>'+(busy?'Атака идёт…':'Отразить волну')+'</button>'+(log?'<div class="sg-log">'+log+'</div>':'');
+ root.className='sg'+(busy?' run':'');root.innerHTML=h;
+}
+function run(){
+ busy=true;render();
+ setTimeout(function(){
+  var a=W[wave],d=def(),left=0,miss=[];
+  V.forEach(function(x){var l=Math.max(0,a[x[0]]-d[x[0]]);if(a[x[0]]>0&&l>0)miss.push(x[1]+' (не хватило '+l+')');left+=l});
+  var dmg=Math.round(left*0.5);hp-=dmg;
+  log='<b>Волна '+(wave+1)+':</b> '+(dmg===0?'атака полностью отражена.':'урон серверу '+dmg+'. Пробили: '+miss.join(', ')+'.');
+  busy=false;
+  if(hp<=0){hp=0;state='lose'}
+  else if(wave===W.length-1){state='win';wave=W.length-1}
+  else{wave++;money+=40;hp=Math.min(100,hp+10);log+=' Получено 40 кр., сервер восстановил 10 здоровья.'}
+  render();
+ },1100);
+}
+root.addEventListener('click',function(e){var b=e.target.closest('[data-a]');if(!b||busy)return;
+ var a=b.getAttribute('data-a');
+ if(a==='buy'){var k=b.getAttribute('data-k');if(money>=D[k].c){money-=D[k].c;own[k]++;render()}}
+ else if(a==='go')run();else if(a==='restart')init()});
+init();
+})();
+setInterval(tick,400);
+$('sc').addEventListener('change',function(){B=200;hot=0;calm=0;mode='ok'});
+window.addEventListener('resize',draw);
+tick();
+if(!RM)requestAnimationFrame(loop);
+</script>
+<script>
+// Palette is intentionally fixed to Aegis teal-green.
+document.documentElement.setAttribute('data-theme','teal');
+</script>
+<div id="tprog" aria-hidden="true"></div>
+<div class="tbar" aria-hidden="true"><span>aegis://blackhole</span><span id="tsec">главная</span><span><button id="tk" type="button">Ctrl K</button> <b id="tpct">0%</b></span></div>
+<div id="cmdk" hidden><div class="cmd" role="dialog" aria-label="Переход к разделу"><input id="cmdi" placeholder="Перейти к разделу… (Esc закрыть)" aria-label="Поиск раздела" autocomplete="off"><ul id="cmdl"></ul></div></div>
+<script>
+(function(){var d=document.documentElement,el=document.getElementById('design'),v='tech',io=null;
+function reveal(on){if(!on){d.classList.remove('rv');return}
+  d.classList.add('rv');
+  if(!io&&'IntersectionObserver' in window){io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('vis')})},{threshold:.06});document.querySelectorAll('section').forEach(function(x){io.observe(x)})}
+  else if(!io)document.querySelectorAll('section').forEach(function(x){x.classList.add('vis')})}
+function apply(x){v=x;if(x==='classic')d.removeAttribute('data-design');else d.setAttribute('data-design',x);reveal(x==='tech')}
+el.value='tech';
+el.disabled=true;
+apply('tech');
+/* HUD: прогресс, раздел, процент */
+var secs=[].slice.call(document.querySelectorAll('section[id]')),ts=document.getElementById('tsec'),tp=document.getElementById('tpct'),pg=document.getElementById('tprog'),tk=false;
+function upd(){tk=false;var max=d.scrollHeight-innerHeight,pc=max>0?Math.round(scrollY/max*100):0,cur='главная';
+  pg.style.width=pc+'%';tp.textContent=pc+'%';
+  secs.forEach(function(s){if(s.getBoundingClientRect().top<=140)cur=(s.querySelector('h2')||s).textContent.replace(/\s+/g,' ').trim()});ts.textContent=cur}
+addEventListener('scroll',function(){if(!tk){tk=true;requestAnimationFrame(upd)}},{passive:true});upd();
+/* Палитра команд: Ctrl+K или / */
+var cm=document.getElementById('cmdk'),ci=document.getElementById('cmdi'),cl=document.getElementById('cmdl'),it=[],ix=0;
+var all=[{id:'',t:'Наверх'}].concat(secs.map(function(s){return{id:s.id,t:(s.querySelector('h2')||s).textContent.replace(/\s+/g,' ').trim()}}));
+function draw(){var q=ci.value.toLowerCase();it=all.filter(function(o){return o.t.toLowerCase().indexOf(q)>-1});ix=Math.min(ix,Math.max(0,it.length-1));
+  cl.innerHTML='';it.forEach(function(o,k){var li=document.createElement('li');li.textContent='> '+o.t;if(k===ix)li.className='on';li.onclick=function(){go(o)};cl.appendChild(li)})}
+function go(o){close();if(o.id)location.hash='#'+o.id;else scrollTo({top:0,behavior:'smooth'})}
+function open(){cm.hidden=false;ci.value='';ix=0;draw();ci.focus()}
+function close(){cm.hidden=true}
+document.getElementById('tk').onclick=open;
+cm.addEventListener('click',function(e){if(e.target===cm)close()});
+ci.addEventListener('input',function(){ix=0;draw()});
+addEventListener('keydown',function(e){
+  var typing=/INPUT|SELECT|TEXTAREA/.test((document.activeElement||{}).tagName||'');
+  if(cm.hidden){if(v==='tech'&&((e.key==='k'&&(e.ctrlKey||e.metaKey))||(e.key==='/'&&!typing))){e.preventDefault();open()}return}
+  if(e.key==='Escape')close();
+  else if(e.key==='ArrowDown'){e.preventDefault();ix=Math.min(ix+1,it.length-1);draw()}
+  else if(e.key==='ArrowUp'){e.preventDefault();ix=Math.max(ix-1,0);draw()}
+  else if(e.key==='Enter'&&it[ix]){e.preventDefault();go(it[ix])}});
+})();
+</script>
+<script>
+(function(){
+var out=document.getElementById('tout'),inp=document.getElementById('tcmd'),box=document.getElementById('tmn');
+if(!out||!inp)return;
+var RM=matchMedia('(prefers-reduced-motion:reduce)').matches,hist=[],hi=0,busy=false,lastBlock=null;
+function line(t,c){var d=document.createElement('div');if(c)d.className=c;d.textContent=t;out.appendChild(d);out.scrollTop=out.scrollHeight}
+function say(arr){busy=true;inp.disabled=true;var k=0;(function nx(){
+  if(k>=arr.length){busy=false;inp.disabled=false;inp.focus({preventScroll:true});return}
+  var a=arr[k++];line(a[0],a[1]);if(RM)nx();else setTimeout(nx,a[2]||35)})()}
+function L(t,c,d){return[t,c||'',d]}
+function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gen(mode){var r=rng(7),T=[],I=[],k,s,n;
+  function gs(){return Math.sqrt(-2*Math.log(1-r()))*Math.cos(6.2832*r())}
+  function ip(){return(11+r()*212|0)+'.'+(r()*256|0)+'.'+(r()*256|0)+'.'+(1+r()*253|0)}
+  var reg=[];for(k=0;k<300;k++)reg.push(ip());
+  for(s=0;s<600;s++){n=Math.max(0,Math.round(20+3*gs()));for(k=0;k<n;k++){T.push(s);I.push(reg[r()*300|0])}}
+  if(mode==='few'||mode==='both'){['185.220.101.14','45.155.205.77','193.32.162.9'].forEach(function(a){for(s=180;s<230;s++){n=65+(r()*16|0);for(k=0;k<n;k++){T.push(s);I.push(a)}}})}
+  if(mode==='dist'||mode==='both'){var bot=[];for(k=0;k<160;k++)bot.push(ip());for(s=400;s<460;s++){n=120+(r()*41|0);for(k=0;k<n;k++){T.push(s);I.push(bot[k])}}}
+  if(mode==='flash'){var cr=[];for(k=0;k<900;k++)cr.push(ip());for(s=300;s<360;s++){n=60+(r()*21|0);for(k=0;k<n;k++){T.push(s);I.push(cr[r()*900|0])}}}
+  return{T:T,I:I}}
+function analyze(D){var T=D.T,I=D.I,size=Math.max(1,Math.ceil(600/150)),NB=Math.floor(599/size)+1,cnt=[],bo=[],i,b;
+  for(b=0;b<NB;b++)cnt.push(0);
+  for(i=0;i<T.length;i++){b=Math.floor(T[i]/size);bo.push(b);cnt[b]++}
+  var rate=cnt.map(function(c){return c/size}),base=Math.max(1,rate.slice().sort(function(a,c){return a-c})[Math.floor(NB/2)]),inc=[],cur=null,hot=0,calm=0,st=0;
+  for(b=0;b<NB;b++){if(rate[b]>2.5*base){if(!hot)st=b;hot++;calm=0;if(cur)cur.e=b;else if(hot>=2)cur={s:st,e:b}}
+    else{hot=0;calm++;base=.9*base+.1*rate[b];if(cur&&calm>=3){inc.push(cur);cur=null}}}
+  if(cur)inc.push(cur);
+  var ii=[];for(b=0;b<NB;b++)ii.push(-1);
+  inc.forEach(function(x,k){for(var q=x.s;q<=x.e;q++)ii[q]=k});
+  var pb={},pi={},fs={},key;
+  for(i=0;i<I.length;i++){b=bo[i];if(!(I[i] in fs))fs[I[i]]=b;if(ii[b]>=0){key=I[i]+'|'+b;pb[key]=(pb[key]||0)+1;pi[I[i]]=(pi[I[i]]||0)+1}}
+  var heavy={};Object.keys(pb).forEach(function(k){if(pb[k]/size>50)heavy[k.split('|')[0]]=1});
+  inc.forEach(function(x){var tot=0,hv=0,pk=0,q;for(q=x.s;q<=x.e;q++){tot+=cnt[q];if(rate[q]>pk)pk=rate[q]}
+    Object.keys(pb).forEach(function(k){var p=k.split('|');if(+p[1]>=x.s&&+p[1]<=x.e&&heavy[p[0]])hv+=pb[k]});
+    x.peak=pk;x.kind=tot&&hv/tot>.5?'few':'dist'});
+  var f0=inc.length?inc[0].s:NB,block=[],check=0;
+  Object.keys(pi).forEach(function(a){if(heavy[a])block.push(a);else if(fs[a]>=f0)check++});
+  block.sort(function(a,c){return pi[c]-pi[a]});
+  return{n:T.length,uniq:Object.keys(fs).length,rate:rate,size:size,NB:NB,inc:inc,ii:ii,block:block,check:check,pi:pi}}
+function mmss(x){return('0'+(x/60|0)).slice(-2)+':'+('0'+(x%60)).slice(-2)}
+function spark(R,w){var g=Math.ceil(R.NB/w),m=Math.max.apply(null,R.rate),ch='▁▂▃▄▅▆▇█',a='',f='',i,q,v,hit;
+  for(i=0;i<R.NB;i+=g){v=0;hit=false;for(q=i;q<Math.min(R.NB,i+g);q++){if(R.rate[q]>v)v=R.rate[q];if(R.ii[q]>=0)hit=true}
+    a+=ch.charAt(Math.min(7,Math.floor(v/m*7.99)));f+=hit?'^':' '}
+  return[a,f]}
+function scan(mode){
+  if(['both','few','dist','flash','normal'].indexOf(mode)<0)return[L('режимы: scan [few | dist | flash | normal]. Без параметра: две атаки сразу.','err')];
+  var R=analyze(gen(mode)),o=[L('$ генерирую учебный журнал ('+mode+'), 10 минут...','mut',120),L('запросов: '+R.n.toLocaleString('ru')+' · уникальных адресов: '+R.uniq),L('трафик по времени (зап/с):','mut',80)],sp=spark(R,60);
+  o.push(L(sp[0],'ok',250),L(sp[1],'err',200));
+  if(!R.inc.length){o.push(L('атак не найдено: трафик в норме.','ok'));lastBlock=[];return o}
+  o.push(L('найдено всплесков трафика: '+R.inc.length,'acc',200));
+  R.inc.forEach(function(x,k){o.push(L('  '+(k+1)+'. '+mmss(x.s*R.size)+' - '+mmss((x.e+1)*R.size)+' · пик '+Math.round(x.peak)+' зап/с · '+(x.kind==='few'?'мало адресов':'много адресов'),'',180))});
+  lastBlock=R.block;
+  o.push(L('блокировать: '+R.block.length+' IP','acc',150));
+  R.block.slice(0,5).forEach(function(a){o.push(L('  '+a+'  ('+R.pi[a]+' запросов)','ok',90))});
+  o.push(L('на проверку (новые адреса во время атаки): '+R.check,'',120));
+  if(!R.block.length)o.push(L('блокировать некого: источников слишком много. Это может быть и ботнет, и наплыв людей, поэтому новых клиентов проверяем (например, капчей), а не блокируем вслепую.','mut',150));
+  return o}
+var AL={'актуальность':'relevance','relevance':'relevance','цели':'aims','aims':'aims','атаки':'s1','s1':'s1','прототип':'s2','симулятор':'s2','s2':'s2','рекомендации':'s3','s3':'s3','сравнение':'compare','compare':'compare','игра':'game','game':'game','стратегия':'strategy','strategy':'strategy','монитор':'monitor','monitor':'monitor','терминал':'terminal','terminal':'terminal','опрос':'survey','survey':'survey','команда':'team','team':'team','источники':'sources','sources':'sources'};
+var CMD={
+ help:function(){return[L('Команды:','acc',20),L('  scan [few|dist|flash|normal]  запуск метода на учебном журнале','',20),L('  blocklist                     список IP для блокировки','',20),L('  explain                       5 шагов Blackhole','',20),L('  goto <раздел>                 перейти: game, monitor, compare, survey...','',20),L('  theme <teal|indigo|amber|crimson>','',20),L('  design <classic|soft|tech|magazine|cards>','',20),L('  team · stats · about · clear','',20),L('Tab дополняет команду, стрелки вверх и вниз листают историю.','mut',20)]},
+ about:function(){return[L('Aegis: Blackhole. Учебный проект IT 19-26 Corporation.'),L('Метод находит всплеск трафика и решает, кого блокировать.','mut')]},
+ explain:function(){return[L('1. Норма: считаем обычный уровень трафика (скользящее среднее).'),L('2. Всплеск: выше нормы в 2,5 раза два такта подряд.'),L('3. Источники: больше 50 запросов/с с одного адреса: нарушитель.'),L('4. Фильтр: знакомых пропускаем, новых проверяем.'),L('5. Отбой: после спокойного периода защиту снимаем.')]},
+ scan:function(a){return scan(a[0]||'both')},
+ blocklist:function(){if(!lastBlock)return[L('список пуст: сначала выполните scan','err')];if(!lastBlock.length)return[L('в списке нет адресов','mut')];return lastBlock.map(function(x){return L(x,'ok',40)})},
+ goto:function(a){var id=AL[(a[0]||'').toLowerCase()];if(!id)return[L('куда? Например: goto game, goto monitor, goto compare','err')];setTimeout(function(){location.hash='#'+id},350);return[L('перехожу: '+id,'ok')]},
+ theme:function(a){var ok=['teal','indigo','amber','crimson'];if(ok.indexOf(a[0])<0)return[L('темы: '+ok.join(', '),'err')];try{localStorage.setItem('aegis_theme',a[0])}catch(e){}setTimeout(function(){location.reload()},600);return[L('применяю тему '+a[0]+'...','ok')]},
+ design:function(a){var ok=['classic','soft','tech','magazine','cards'],el=document.getElementById('design');if(ok.indexOf(a[0])<0||!el)return[L('дизайны: '+ok.join(', '),'err')];el.value=a[0];el.dispatchEvent(new Event('change'));return[L('дизайн: '+a[0],'ok')]},
+ team:function(){return[L('Damir Z.   Founder & CEO'),L('Alex G.    Head of Engineering'),L('Dmitriy L.  Technical Lead'),L('Daniel R.   Solutions Architect')]},
+ stats:function(){return[L('Cloudflare DDoS Threat Report H1 2026:','acc'),L('  рекордная атака: 31,4 Тбит/с'),L('  атак мощнее 1 Тбит/с: 935'),L('  всего атак: 23,2 млн')]},
+ clear:function(){out.innerHTML='';return[]},
+ sudo:function(){return[L('sudo: пароль не нужен, а вот разрешение владельца нужно.','err'),L('DDoS на чужие системы незаконен, даже «в шутку».','mut'),L('Тренируйтесь на учебном журнале: введите scan.','ok')]}
+};
+function run(t){t=t.trim();if(!t||busy)return;line('aegis@blackhole:~$ '+t,'acc');
+  if(hist[hist.length-1]!==t)hist.push(t);hi=hist.length;
+  var p=t.split(/\s+/),c=p[0].toLowerCase(),f=CMD[c];
+  if(c==='ddos'||c==='attack')f=CMD.sudo;
+  if(!f){say([L('команда не найдена: '+c+'. Введите help.','err')]);return}
+  var o=f(p.slice(1));if(o.length)say(o)}
+inp.addEventListener('keydown',function(e){
+  if(e.key==='Enter'){var v=inp.value;inp.value='';run(v)}
+  else if(e.key==='ArrowUp'){e.preventDefault();if(hi>0){hi--;inp.value=hist[hi]}}
+  else if(e.key==='ArrowDown'){e.preventDefault();if(hi<hist.length-1){hi++;inp.value=hist[hi]}else{hi=hist.length;inp.value=''}}
+  else if(e.key==='Tab'){e.preventDefault();var v=inp.value.toLowerCase(),m=Object.keys(CMD).filter(function(k){return k.indexOf(v)===0});if(m.length===1)inp.value=m[0]+' '}});
+box.addEventListener('click',function(){if(!getSelection().toString())inp.focus({preventScroll:true})});
+document.querySelectorAll('.tchips button').forEach(function(b){b.addEventListener('click',function(){run(b.getAttribute('data-c'))})});
+line('Aegis Terminal v1.0. Введите help или нажмите кнопку ниже.','ok');
+})();
+</script>
+<script>
+(function(){
+var U='https://script.google.com/macros/s/AKfycbwUI9f695xX7maUbEpA9w0al9KGjQXFH2sOURMY-DFGI-nWgBPp9LmI7pShwGy7vvhB/exec',root=document.getElementById('res');
+if(!root)return;
+function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!==undefined)e.textContent=x;return e}
+function bars(title,rows,tot,pct){var box=el('div','rb');box.appendChild(el('h3',null,title));
+  rows.forEach(function(r){var row=el('div','rr'),tr=el('div','rt'),f=el('i'),w=tot?Math.min(100,Math.round(r[1]/tot*100)):0;
+    f.setAttribute('data-w',w);tr.appendChild(f);row.appendChild(el('span','rl',r[0]));row.appendChild(tr);
+    row.appendChild(el('b',null,pct?w+'%':r[1]+' ('+w+'%)'));box.appendChild(row)});return box}
+function pick(o,order){return order.map(function(k){return[k,o[k]||0]})}
+function kpi(v,l){var c=el('div','kc');c.appendChild(el('b',null,v));c.appendChild(el('span',null,l));return c}
+function render(d){root.textContent='';
+  if(!d||!d.n){root.appendChild(el('p','lead','Пока нет ответов. Результаты появятся после первого прохождения опроса.'));return}
+  var si=0,sc=0;Object.keys(d.imp||{}).forEach(function(k){var v=parseInt(k,10);if(v){si+=v*d.imp[k];sc+=d.imp[k]}});
+  var kp=el('div','kp');kp.appendChild(kpi(String(d.n),'ответов'));kp.appendChild(kpi(String(d.avg).replace('.',','),'средний балл из 6'));kp.appendChild(kpi(sc?(si/sc).toFixed(1).replace('.',','):'—','важность темы из 5'));root.appendChild(kp);
+  var g=el('div','rg'),o=d.ok||{};
+  g.appendChild(bars('Правильные ответы',[['Что такое DDoS',o.ddos*100],['Что такое ботнет',o.bot*100],['Как защитить сайт',o.def*100],['«Шутка» незаконна',o.law*100],['Сменили пароль роутера',o.pass*100],['Обновляют вовремя',o.upd*100]],100,true));
+  g.appendChild(bars('Знали о DDoS до опроса',pick(d.know||{},['Нет','Слышал(а) название','Примерно понимаю суть','Могу объяснить другому']),d.n));
+  g.appendChild(bars('Направление обучения',pick(d.dir||{},['IT и программирование','Другое техническое','Экономика, право, гуманитарное','Другое']),d.n));
+  var ints=Object.keys(d.ints||{}).sort(function(a,b){return d.ints[b]-d.ints[a]}).map(function(k){return[k,d.ints[k]]});
+  g.appendChild(bars('Что интересно узнать',ints,d.n));
+  root.appendChild(g);
+
+  // Выводы автоматически пересчитываются по актуальным данным опроса.
+  var conclusions = el('div','survey-conclusions');
+  conclusions.appendChild(el('h3',null,'Выводы по опросу'));
+  conclusions.appendChild(el('p','survey-conclusions-intro',
+    'Что видно по ответам участников и на что стоит обратить внимание в обучении.'));
+  var cg = el('div','survey-conclusions-grid');
+  function conclusion(metric,title,body){
+    var card=el('article','survey-conclusion');
+    card.appendChild(el('div','survey-conclusion-metric',metric));
+    card.appendChild(el('h4',null,title));
+    card.appendChild(el('p',null,body));
+    cg.appendChild(card);
+  }
+  function count(obj,key){return Number((obj||{})[key])||0}
+  function pct(value){return Math.round((Number(value)||0)*100)}
+  function sharePct(value,total){return total?Math.round(value/total*100):0}
+  var know=d.know||{}, imp=d.imp||{}, ints=d.ints||{};
+  var canExplain=count(know,'Могу объяснить другому');
+  var limitedKnowledge=count(know,'Не знаю')+count(know,'Слышал(а) название');
+  var ddosPct=pct(o.ddos), botPct=pct(o.bot), lawPct=pct(o.law), passPct=pct(o.pass);
+  var updateGroups=Math.round((Number(o.upd)||0)*d.n);
+  var updatePct=sharePct(updateGroups,d.n);
+
+  conclusion(ddosPct+'% / '+botPct+'%',
+    'Основы DDoS знают лучше, чем понятие ботнета',
+    'Правильно определили DDoS '+Math.round((Number(o.ddos)||0)*d.n)+' из '+d.n+
+    ' участников, а ботнет — '+Math.round((Number(o.bot)||0)*d.n)+
+    '. Значит, терминологию и роль заражённых устройств полезно разобрать подробнее.');
+  conclusion(canExplain+' из '+d.n,
+    'Уверенность в знаниях различается',
+    canExplain+' участник(а) заявили, что могут объяснить DDoS другому человеку; '+
+    limitedKnowledge+' выбрали «Не знаю» или «Слышал(а) название». Полезны материалы и для начинающих, и для тех, кто хочет закрепить знания.');
+  conclusion(lawPct+'%',
+    'Не все уверенно знают правовые границы',
+    Math.round((Number(o.law)||0)*d.n)+' из '+d.n+
+    ' выбрали ответ, что проверка без разрешения владельца незаконна. Остальным стоит отдельно объяснить необходимость разрешения и безопасного учебного стенда.');
+  conclusion(passPct+'% / '+updatePct+'%',
+    'Цифровая гигиена требует внимания',
+    passPct+'% сообщили, что сменили пароль роутера. По обновлениям '+updatePct+
+    '% попали в группы «сразу» или «раз в несколько месяцев»; эти варианты объединены в сводной статистике, поэтому показатель не означает, что все обновляют устройства немедленно.');
+
+  var imp5=0, impTotal=0, impSum=0;
+  Object.keys(imp).forEach(function(k){
+    var v=count(imp,k), num=parseInt(k,10);
+    impTotal+=v;
+    if(num)impSum+=num*v;
+    if(num===5)imp5+=v;
+  });
+  var topTopics=Object.keys(ints).map(function(k){return [k,count(ints,k)]})
+    .sort(function(a,b){return b[1]-a[1]});
+  var topicText=topTopics.length
+    ? 'Чаще всего выбирали «'+topTopics[0][0]+'» ('+topTopics[0][1]+' отметок)'+
+      (topTopics.length>1?'; далее — «'+topTopics[1][0]+'» ('+topTopics[1][1]+' отметок).':'.')
+    : 'Пока недостаточно данных о выбранных темах.';
+  conclusion(impTotal?(impSum/impTotal).toFixed(1).replace('.',',')+' из 5':'—',
+    'Тему считают важной и хотят практики',
+    (impTotal?Math.round(imp5/impTotal*100)+'% поставили максимальную оценку важности. ':'')+
+    topicText+' Это поддерживает идею добавлять практические материалы по защите устройств и работе в кибербезопасности.');
+
+  conclusions.appendChild(cg);
+  conclusions.appendChild(el('p','src',
+    'Выводы описывают только ответы участников этого опроса; их нельзя автоматически переносить на всех студентов.'));
+  root.appendChild(conclusions);
+
+  if(d.n<10)root.appendChild(el('p','src','Ответов пока мало ('+d.n+'), поэтому цифры ориентировочные.'));
+  setTimeout(function(){root.querySelectorAll('.rt i').forEach(function(f){f.style.width=f.getAttribute('data-w')+'%'})},60)}
+// Apps Script ContentService может отвечать через редирект, который fetch()
+// с GitHub Pages нередко блокирует CORS. JSONP загружает ответ как script.
+function loadResultsJsonp(url) {
+  return new Promise(function (resolve, reject) {
+    var callbackName = '__aegisResults_' + Date.now() + '_' +
+      Math.random().toString(36).slice(2);
+    var script = document.createElement('script');
+    var timer;
+    var finished = false;
+
+    function cleanup() {
+      clearTimeout(timer);
+      script.onload = null;
+      script.onerror = null;
+      if (script.parentNode) script.parentNode.removeChild(script);
+      try { delete window[callbackName]; }
+      catch (e) { window[callbackName] = undefined; }
+    }
+
+    function fail(error) {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      reject(error);
+    }
+
+    window[callbackName] = function (data) {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      resolve(data);
+    };
+
+    script.async = true;
+    script.onerror = function () {
+      fail(new Error('JSONP request failed. Проверь URL, доступ и версию Apps Script.'));
+    };
+
+    timer = setTimeout(function () {
+      fail(new Error('Apps Script не ответил за 15 секунд.'));
+    }, 15000);
+
+    var separator = url.indexOf('?') === -1 ? '?' : '&';
+    script.src = url + separator + 'callback=' +
+      encodeURIComponent(callbackName) + '&_=' + Date.now();
+    document.head.appendChild(script);
+  });
+}
+
+loadResultsJsonp(U).then(render).catch(function (e) {
+  root.textContent = '';
+  root.appendChild(el('p', 'src',
+    'Результаты пока недоступны. Проверьте подключение к Google Apps Script.'));
+  if (window.console) console.warn('results:', e);
+});
+})();
+</script>
+</body>
+</html>
